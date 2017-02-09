@@ -23,7 +23,7 @@ class Register(object):
 
 
 class CPU(object):
-    def __init__(self, bitwidth, baseAddress):
+    def __init__(self, baseAddress=0x0000):
         self.regs = {  'A': Register('A', bitwidth),
                        'X': Register('X', bitwidth),
                        'Y': Register('Y', bitwidth),
@@ -31,14 +31,13 @@ class CPU(object):
                        'S': Register('S', bitwidth),
                        'P': Register('P', bitwidth)}
 
-        self.bitwidth = bitwidth
-        self.ptrSize = 2 # 2 bytes for PC
+        self.bitwidth = 8 # 1 byte - 8 bits
+        self.pcSize = 2 # 2 bytes for PC - 16 bits
         self.memory = []
         self.pastMemory = []
         self.symbMemory = z3Array('mem', z3.BitVecSort(bitwidth), z3.BitVecSort(8))
 
-        if (baseAddress):
-            self.regs['PC'].SetValue(baseAddress)
+        self.regs['PC'].SetValue(baseAddress)
 
         def ReadMemory(self, address): # always read 1 byte
             return self.memory[address]
@@ -70,7 +69,11 @@ class CPU(object):
             self.SetRegister('P', newFlag)
 
         def CreateOverflowCondition(oldDst, oldSrc):
-            pass
+            op1 = (oldDst & 0x80) >> (self.bitwidth - 1)
+            op2 = (oldSrc & 0x80) >> (self.bitwidth - 1)
+            ofCond = (((op1 ^ op2) ^ 0x2) & (((op1 + op2) ^ op2) & 0x2)) != 0
+
+            return ofCond
 
         def CreatecarryCondition(oldDst, oldSrc, subOp):
             pass
