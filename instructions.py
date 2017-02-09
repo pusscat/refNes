@@ -16,13 +16,30 @@ class Instruction(object):
 # return false otherwise
 
 def adcImm(cpu):
-    pass
+    immVal = cpu.ReadRelPC(1)
+    accuVal = cpu.GetRegister('A')
+
+    cpu.SetRegister('A', accuVal + immVal)
+    return False
 
 def adcZero(cpu):
-    pass
+    zeroOffset = cpu.ReadRelPC(1)
+    memVal = cpu.ReadMemory(zeroOffset)
+    accuVal = cpu.GetRegister('A')
+
+    cpu.SetRegister('A', accuVal + memVal)
+    return False
 
 def adcZeroX(cpu):
-    pass
+    zeroOffset = cpu.ReadRelPC(1)
+    xVal = cpu.GetRegister('X')
+
+    memVal = cpu.ReadMemory(zeroOffset + xVal)
+    accuVal = cpu.GetRegister('A')
+
+    cpu.SetRegister('A', accuVal + memVal)
+    return False
+
 
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - Appendix A
                 # opcode : Instruction(mnem, function, size, cycles), 

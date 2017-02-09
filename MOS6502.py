@@ -46,6 +46,9 @@ class CPU(object):
     def ReadMemory(self, address): # always read 1 byte
         return self.memory[address]
 
+    def ReadRelPC(self, offset):
+        return self.memory[self.GetRegister('PC')+offset]
+
     def SetMemory(self, address, value): # always write 1 byte
         self.memory[address] = value
         return value
