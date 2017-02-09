@@ -53,3 +53,39 @@ class CPU(object):
         def SetRegister(self, name, value):
             self.regs[name].SetValue(value)
             return value
+
+        def SetFlag(self, flagName, value):
+            flags = {   'C':0,  # Carry
+                        'Z':1,  # Zero
+                        'I':3,  # Interrupt mask
+                        'V':6,  # Overflow
+                        'N':7}  # Negative
+
+            flagReg = self.GetRegister('P')
+            if value == 1:
+                newFlag = flagReg | 1 << flags[flagName]
+            else:
+                newFlag = flagReg & ~(1 << flags[flagName])
+
+            self.SetRegister('P', newFlag)
+
+        def CreateOverflowCondition(oldDst, oldSrc):
+            pass
+
+        def CreatecarryCondition(oldDst, oldSrc, subOp):
+            pass
+
+        def UpdateFlags(self, flags, oldDst, oldSrc, newVal, carry, subOp):
+            ofCond = self.CreateOverflowCondition(oldDst, oldSrc)
+            cfConf = self.CreateCarryCondition(oldDst, oldSrc, subOp)
+
+            validFlags = {  'C': cfCond == True,
+                            'Z': newVal == 0,
+                            'V': ofCond == True,
+                            'N': ((newVal & 0x80) != 0)}
+
+            for flag in flags:
+                self.SetFlag(flag, validFlags[flag])
+
+
+                        
