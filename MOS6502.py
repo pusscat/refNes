@@ -76,7 +76,10 @@ class CPU(object):
             return ofCond
 
         def CreatecarryCondition(oldDst, oldSrc, subOp):
-            pass
+            if subOp:
+                return ((~oldSrc + 1) > oldDst)
+            else:
+                return ((oldSrc > 0) and (oldDst > (0xff - oldSrc)))
 
         def UpdateFlags(self, flags, oldDst, oldSrc, newVal, carry, subOp):
             ofCond = self.CreateOverflowCondition(oldDst, oldSrc)
