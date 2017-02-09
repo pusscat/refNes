@@ -1,3 +1,5 @@
+import instructions
+
 class Register(object):
     def __init__(self, name, bitwidth):
         self.name = name
@@ -33,7 +35,7 @@ class CPU(object):
 
         self.bitwidth = 8 # 1 byte - 8 bits
         self.pcSize = 2 # 2 bytes for PC - 16 bits
-        self.memory = []
+        self.memory = 0x10000 * [0x00]
         self.pastMemory = []
         self.symbMemory = z3Array('mem', z3.BitVecSort(bitwidth), z3.BitVecSort(8))
 
@@ -92,6 +94,23 @@ class CPU(object):
 
             for flag in flags:
                 self.SetFlag(flag, validFlags[flag])
+        
+        def GetFlag(self, flagName):
+            flags = {   'C':0,
+                        'Z':1,
+                        'I':3,
+                        'V':6,
+                        'N':7}
+            flagsReg = self.GetFlag('P')
+            flagIndex = flags[flagName]
+            return ((flagsReg & (1 << flagIndex)) != 0)
 
+        def step(self):
+            opCode = self.ReadMemory(self.GetRegister('PC'))
+            instruction = self.instructions[opcode]
+            instruction.execute(self)
+            self.cycle += instruction.cycles
+
+            return self
 
                         
