@@ -41,76 +41,86 @@ class CPU(object):
 
         self.regs['PC'].SetValue(baseAddress)
 
-        def ReadMemory(self, address): # always read 1 byte
-            return self.memory[address]
+        self.cycle = 0
 
-        def SetMemory(self, address, value): # always write 1 byte
-            self.memory[address] = value
-            return value
+    def ReadMemory(self, address): # always read 1 byte
+        return self.memory[address]
 
-        def GetRegister(name):
-            return self.regs[name].GetValue()
+    def SetMemory(self, address, value): # always write 1 byte
+        self.memory[address] = value
+        return value
 
-        def SetRegister(self, name, value):
-            self.regs[name].SetValue(value)
-            return value
+    def GetRegister(name):
+        return self.regs[name].GetValue()
 
-        def SetFlag(self, flagName, value):
-            flags = {   'C':0,  # Carry
-                        'Z':1,  # Zero
-                        'I':3,  # Interrupt mask
-                        'V':6,  # Overflow
-                        'N':7}  # Negative
+    def SetRegister(self, name, value):
+        self.regs[name].SetValue(value)
+        return value
 
-            flagReg = self.GetRegister('P')
-            if value == 1:
-                newFlag = flagReg | 1 << flags[flagName]
-            else:
-                newFlag = flagReg & ~(1 << flags[flagName])
+    def SetFlag(self, flagName, value):
+        flags = {   'C':0,  # Carry
+                    'Z':1,  # Zero
+                    'I':3,  # Interrupt mask
+                    'V':6,  # Overflow
+                    'N':7}  # Negative
 
-            self.SetRegister('P', newFlag)
+        flagReg = self.GetRegister('P')
+        if value == 1:
+            newFlag = flagReg | 1 << flags[flagName]
+        else:
+            newFlag = flagReg & ~(1 << flags[flagName])
 
-        def CreateOverflowCondition(oldDst, oldSrc):
-            op1 = (oldDst & 0x80) >> (self.bitwidth - 1)
-            op2 = (oldSrc & 0x80) >> (self.bitwidth - 1)
-            ofCond = (((op1 ^ op2) ^ 0x2) & (((op1 + op2) ^ op2) & 0x2)) != 0
+        self.SetRegister('P', newFlag)
 
-            return ofCond
+    def CreateOverflowCondition(oldDst, oldSrc):
+        op1 = (oldDst & 0x80) >> (self.bitwidth - 1)
+        op2 = (oldSrc & 0x80) >> (self.bitwidth - 1)
+        ofCond = (((op1 ^ op2) ^ 0x2) & (((op1 + op2) ^ op2) & 0x2)) != 0
 
-        def CreatecarryCondition(oldDst, oldSrc, subOp):
-            if subOp:
-                return ((~oldSrc + 1) > oldDst)
-            else:
-                return ((oldSrc > 0) and (oldDst > (0xff - oldSrc)))
+        return ofCond
 
-        def UpdateFlags(self, flags, oldDst, oldSrc, newVal, carry, subOp):
-            ofCond = self.CreateOverflowCondition(oldDst, oldSrc)
-            cfConf = self.CreateCarryCondition(oldDst, oldSrc, subOp)
+    def CreatecarryCondition(oldDst, oldSrc, subOp):
+        if subOp:
+            return ((~oldSrc + 1) > oldDst)
+        else:
+            return ((oldSrc > 0) and (oldDst > (0xff - oldSrc)))
 
-            validFlags = {  'C': cfCond == True,
-                            'Z': newVal == 0,
-                            'V': ofCond == True,
-                            'N': ((newVal & 0x80) != 0)}
+    def UpdateFlags(self, flags, oldDst, oldSrc, newVal, carry, subOp):
+        ofCond = self.CreateOverflowCondition(oldDst, oldSrc)
+        cfConf = self.CreateCarryCondition(oldDst, oldSrc, subOp)
 
-            for flag in flags:
-                self.SetFlag(flag, validFlags[flag])
-        
-        def GetFlag(self, flagName):
-            flags = {   'C':0,
-                        'Z':1,
-                        'I':3,
-                        'V':6,
-                        'N':7}
-            flagsReg = self.GetFlag('P')
-            flagIndex = flags[flagName]
-            return ((flagsReg & (1 << flagIndex)) != 0)
+        validFlags = {  'C': cfCond == True,
+                        'Z': newVal == 0,
+                        'V': ofCond == True,
+                        'N': ((newVal & 0x80) != 0)}
 
-        def step(self):
-            opCode = self.ReadMemory(self.GetRegister('PC'))
-            instruction = self.instructions[opcode]
-            instruction.execute(self)
-            self.cycle += instruction.cycles
+        for flag in flags:
+            self.SetFlag(flag, validFlags[flag])
+    
+    def GetFlag(self, flagName):
+        flags = {   'C':0,
+                    'Z':1,
+                    'I':3,
+                    'V':6,
+                    'N':7}
+        flagsReg = self.GetFlag('P')
+        flagIndex = flags[flagName]
+        return ((flagsReg & (1 << flagIndex)) != 0)
 
-            return self
 
-                        
+    def incPC(size):
+        currentPC = self.GetRegister('PC')
+        self.SetRegister('PC', currentPC + size)
+
+    def incCycles(cycles):
+        self.cycle += cycles
+
+    def step(self):
+        opCode = self.ReadMemory(self.GetRegister('PC'))
+        instruction = self.instructions[opcode]
+        instruction.execute(self)
+        self.cycle += instruction.cycles
+
+        return self
+
+                    
