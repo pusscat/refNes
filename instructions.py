@@ -9,14 +9,14 @@ class Instruction(object):
     def execute(cpu):
         # emulate the instruction and add instruction size to PC
         # if the function returns false implying it hasnt changed PC
-        if self.function(cpu) is False:
+        if self.function(cpu, instruction) is False:
             cpu.incPC(self.size)
         cpu.incCycles(self.cycles)
 
 # instruction functions return True if they modify PC
 # return false otherwise
 
-def adcImm(cpu):
+def adcImm(cpu, instruction):
     immVal = cpu.ReadRelPC(1)
     accuVal = cpu.GetRegister('A')
     if cpu.GetFlag('C') carryVal = 1 else carryVal = 0
@@ -24,10 +24,10 @@ def adcImm(cpu):
     newVal = accuVal + immVal + carryVal
 
     cpu.SetRegister('A', newVal)
-    cpu.UpdateFlags(self.flags, accuVal, immVal, newVal, False, False)
+    cpu.UpdateFlags(instruction.flags, accuVal, immVal, newVal, False, False)
     return False
 
-def adcZero(cpu):
+def adcZero(cpu, instruction):
     zeroOffset = cpu.ReadRelPC(1)
     memVal = cpu.ReadMemory(zeroOffset)
     accuVal = cpu.GetRegister('A')
@@ -36,10 +36,10 @@ def adcZero(cpu):
     newVal = accuVal + memVal + carryVal
 
     cpu.SetRegister('A', newVal)
-    cpu.UpdateFlags(self.flags, accuVal, memVal, newVal, False, False)
+    cpu.UpdateFlags(instruction.flags, accuVal, memVal, newVal, False, False)
     return False
 
-def adcZeroX(cpu):
+def adcZeroX(cpu, instruction):
     zeroOffset = cpu.ReadRelPC(1)
     xVal = cpu.GetRegister('X')
 
@@ -50,7 +50,7 @@ def adcZeroX(cpu):
     newVal = accuVal + memVal + carryVal
 
     cpu.SetRegister('A', newVal)
-    cpu.UpdateFlags(self.flags, accuVal, memVal, newVal, False, False)
+    cpu.UpdateFlags(instruction.flags, accuVal, memVal, newVal, False, False)
     return False
 
 
