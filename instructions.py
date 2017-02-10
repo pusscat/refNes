@@ -16,8 +16,29 @@ class Instruction(object):
 # instruction functions return True if they modify PC
 # return false otherwise
 
+def GetValue(cpu, operType):
+    if operType is 'IMM':
+        return cpu.ReadRelPC(1)
+    if operType is 'ZERO':
+        return cpu.ReadMemory(cpu.ReadRelPC(1))
+    if operType is 'ZEROX' or operType is 'INDIRECTX':
+        return cpu.ReadMemory((cpu.ReadRelPC(1) + cpu.GetRegister('X')) & 0xFF)
+    if operType is 'ZEROY' or operType is 'INDIRECTY':
+        return cpu.ReadMemory((cpu.ReadRelPC(1) + cpu.GetRegister('Y')) & 0xFF)
+    if operType is 'ABS':
+        return cpu.ReadMemory(cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1))
+    if operType is 'ABSX':
+        return cpu.ReadMemory(cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1) + cpu.GetRegister('X'))
+    if operType is 'ABSY':
+        return cpu.ReadMemory(cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1) + cpu.GetRegister('Y'))
+    return value
+
+def GetAddress(cpu, operType):
+    return address
+
+
 def adcImm(cpu, instruction):
-    immVal = cpu.ReadRelPC(1)
+    immVal = GetValue(cpu, 'IMM')
     accuVal = cpu.GetRegister('A')
     carryVal = 1 if cpu.GetFlag('C') else 0
 
@@ -28,7 +49,7 @@ def adcImm(cpu, instruction):
     return False
 
 def adcZero(cpu, instruction):
-    zeroOffset = cpu.ReadRelPC(1)
+    zeroOffset = GetValue(cpu, 'ZERO')
     memVal = cpu.ReadMemory(zeroOffset)
     accuVal = cpu.GetRegister('A')
     carryVal = 1 if cpu.GetFlag('C') else 0
@@ -40,11 +61,8 @@ def adcZero(cpu, instruction):
     return False
 
 def adcZeroX(cpu, instruction):
-    zeroOffset = cpu.ReadRelPC(1)
-    xVal = cpu.GetRegister('X')
+    memVal = GetValue(cpu, 'ZEROX')
 
-    # because its Zero page relative, this address wraps if it goes past $00FF
-    memVal = cpu.ReadMemory((zeroOffset + xVal) & 0xFF)
     accuVal = cpu.GetRegister('A')
     carryVal = 1 if cpu.GetFlag('C') else 0
 
@@ -55,9 +73,7 @@ def adcZeroX(cpu, instruction):
     return False
 
 def adcAbs(cpu, instruction):
-    # 6502 is little endian, so next byte is least sig, one after is most sig
-    absOffset = cpu.ReadRelPc(2) << 8 + cpu.ReadRelPc(1)
-    memVal = cpu.ReadMemory(absOffset)
+    memVal = GetValue(cpu, 'ABS')
     accuVal = cpu.GetRegister('A')
     carryVal = 1 if cpu.GetFlag('C') else 0
 
@@ -68,10 +84,7 @@ def adcAbs(cpu, instruction):
     return False
 
 def adcAbsX(cpu, instruction):
-    # 6502 is little endian, so next byte is least sig, one after is most sig
-    absOffset = cpu.ReadRelPc(2) << 8 + cpu.ReadRelPc(1)
-    xVal = cpu.GetRegister('X')
-    memVal = cpu.ReadMemory(absOffset + xVal)
+    memVal = GetValue(cpu, 'ABSX')
     accuVal = cpu.GetRegister('A')
     carryVal = 1 if cpu.GetFlag('C') else 0
 
@@ -82,10 +95,7 @@ def adcAbsX(cpu, instruction):
     return False
 
 def adcAbsY(cpu, instruction):
-    # 6502 is little endian, so next byte is least sig, one after is most sig
-    absOffset = cpu.ReadRelPc(2) << 8 + cpu.ReadRelPc(1)
-    yVal = cpu.GetRegister('Y')
-    memVal = cpu.ReadMemory(absOffset + yVal)
+    memVal = GetValue(cpu, 'ABSY')
     accuVal = cpu.GetRegister('A')
     carryVal = 1 if cpu.GetFlag('C') else 0
 
@@ -97,12 +107,7 @@ def adcAbsY(cpu, instruction):
 
 
 def adcIndY(cpu, instruction):
-    zeroOffset = cpu.ReadRelPC(1)
-    yVal = cpu.GetRegister('Y')
-
-    # ASSUMING THE FOLLOWING:
-    # because its Zero page relative, this address wraps if it goes past $00FF
-    memVal = cpu.ReadMemory((zeroOffset + yVal) & 0xFF)
+    memVal = GetValue(cpu, 'INDY')
     accuVal = cpu.GetRegister('A')
     carryVal = 1 if cpu.GetFlag('C') else 0
 
