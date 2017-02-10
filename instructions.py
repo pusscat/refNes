@@ -1,7 +1,8 @@
 class Instruction(object):
-    def __init__(self, mnem, function, size, cycles):
+    def __init__(self, mnem, function, flags, size, cycles):
         self.mnem = mnem
         self.function = function
+        self.flags = flags
         self.cycles = cycles
         self.size = size
 
@@ -18,16 +19,24 @@ class Instruction(object):
 def adcImm(cpu):
     immVal = cpu.ReadRelPC(1)
     accuVal = cpu.GetRegister('A')
+    if cpu.GetFlag('C') carryVal = 1 else carryVal = 0
 
-    cpu.SetRegister('A', accuVal + immVal)
+    newVal = accuVal + immVal + carryVal
+
+    cpu.SetRegister('A', newVal)
+    cpu.UpdateFlags(self.flags, accuVal, immVal, newVal, False, False)
     return False
 
 def adcZero(cpu):
     zeroOffset = cpu.ReadRelPC(1)
     memVal = cpu.ReadMemory(zeroOffset)
     accuVal = cpu.GetRegister('A')
+    if cpu.GetFlag('C') carryVal = 1 else carryVal = 0
 
-    cpu.SetRegister('A', accuVal + memVal)
+    newVal = accuVal + memVal + carryVal
+
+    cpu.SetRegister('A', newVal)
+    cpu.UpdateFlags(self.flags, accuVal, memVal, newVal, False, False)
     return False
 
 def adcZeroX(cpu):
@@ -36,14 +45,20 @@ def adcZeroX(cpu):
 
     memVal = cpu.ReadMemory(zeroOffset + xVal)
     accuVal = cpu.GetRegister('A')
+    if cpu.GetFlag('C') carryVal = 1 else carryVal = 0
 
-    cpu.SetRegister('A', accuVal + memVal)
+    newVal = accuVal + memVal + carryVal
+
+    cpu.SetRegister('A', newVal)
+    cpu.UpdateFlags(self.flags, accuVal, memVal, newVal, False, False)
     return False
 
 
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - Appendix A
                 # opcode : Instruction(mnem, function, size, cycles), 
-instructions = {0x69: Instruction('ADCimm', adcImm, 2, 2),
-                0x65: Instruction('ADCzero', adcZero, 2, 3),
-                0x75: Instruction('ADCzerox', adcZeroX, 2, 4),
+flags = {   'ADC', ['N', 'Z', 'C', 'V'] }
+
+instructions = {0x69: Instruction('ADCimm', adcImm, flags['ADC'], 2, 2),
+                0x65: Instruction('ADCzero', adcZero, flags['ADC'], 2, 3),
+                0x75: Instruction('ADCzerox', adcZeroX, flags['ADC'], 2, 4),
                 }
