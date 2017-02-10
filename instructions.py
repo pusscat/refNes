@@ -43,102 +43,95 @@ def GetAddress(cpu, operType):
     return address
 
 
-def adcImm(cpu, instruction):
-    immVal = GetValue(cpu, 'IMM')
+def doAdc(cpu, instruction, value):
     accuVal = cpu.GetRegister('A')
     carryVal = 1 if cpu.GetFlag('C') else 0
 
-    newVal = accuVal + immVal + carryVal
+    newVal = accuVal + value + carryVal
 
     cpu.SetRegister('A', newVal)
     cpu.UpdateFlags(instruction.flags, accuVal, immVal, newVal, False, False)
     return False
 
+
+def adcImm(cpu, instruction):
+    immVal = GetValue(cpu, 'IMM')
+    return doAdc(cpu, instruction, immVal)
+
 def adcZero(cpu, instruction):
-    zeroOffset = GetValue(cpu, 'ZERO')
-    memVal = cpu.ReadMemory(zeroOffset)
-    accuVal = cpu.GetRegister('A')
-    carryVal = 1 if cpu.GetFlag('C') else 0
-
-    newVal = accuVal + memVal + carryVal
-
-    cpu.SetRegister('A', newVal)
-    cpu.UpdateFlags(instruction.flags, accuVal, memVal, newVal, False, False)
-    return False
+    memVal= GetValue(cpu, 'ZERO')
+    return doAdc(cpu, instruction, memVal)
 
 def adcZeroX(cpu, instruction):
     memVal = GetValue(cpu, 'ZEROX')
-
-    accuVal = cpu.GetRegister('A')
-    carryVal = 1 if cpu.GetFlag('C') else 0
-
-    newVal = accuVal + memVal + carryVal
-
-    cpu.SetRegister('A', newVal)
-    cpu.UpdateFlags(instruction.flags, accuVal, memVal, newVal, False, False)
-    return False
+    return doAdc(cpu, instruction, memVal)
 
 def adcAbs(cpu, instruction):
     memVal = GetValue(cpu, 'ABS')
-    accuVal = cpu.GetRegister('A')
-    carryVal = 1 if cpu.GetFlag('C') else 0
-
-    newVal = accuVal + memVal + carryVal
-
-    cpu.SetRegister('A', newVal)
-    cpu.UpdateFlags(instruction.flags, accuVal, memVal, newVal, False, False)
-    return False
+    return doAdc(cpu, instruction, memVal)
 
 def adcAbsX(cpu, instruction):
     memVal = GetValue(cpu, 'ABSX')
-    accuVal = cpu.GetRegister('A')
-    carryVal = 1 if cpu.GetFlag('C') else 0
-
-    newVal = accuVal + memVal + carryVal
-
-    cpu.SetRegister('A', newVal)
-    cpu.UpdateFlags(instruction.flags, accuVal, memVal, newVal, False, False)
-    return False
+    return doAdc(cpu, instruction, memVal)
 
 def adcAbsY(cpu, instruction):
     memVal = GetValue(cpu, 'ABSY')
-    accuVal = cpu.GetRegister('A')
-    carryVal = 1 if cpu.GetFlag('C') else 0
-
-    newVal = accuVal + memVal + carryVal
-
-    cpu.SetRegister('A', newVal)
-    cpu.UpdateFlags(instruction.flags, accuVal, memVal, newVal, False, False)
-    return False
-
+    return doAdc(cpu, instruction, memVal)
 
 def adcIndX(cpu, instruction):
     memVal = GetValue(cpu, 'INDX')
-    accuVal = cpu.GetRegister('A')
-    carryVal = 1 if cpu.GetFlag('C') else 0
-
-    newVal = accuVal + memVal + carryVal
-
-    cpu.SetRegister('A', newVal)
-    cpu.UpdateFlags(instruction.flags, accuVal, memVal, newVal, False, False)
-    return False
+    return doAdc(cpu, instruction, memVal)
 
 def adcIndY(cpu, instruction):
     memVal = GetValue(cpu, 'INDY')
-    accuVal = cpu.GetRegister('A')
-    carryVal = 1 if cpu.GetFlag('C') else 0
+    return doAdc(cpu, instruction, memVal)
 
-    newVal = accuVal + memVal + carryVal
+def doAnd(cpu, instruction, value):
+    accuVal = cpu.GetRegister('A')
+
+    newVal = accuVal & immVal
 
     cpu.SetRegister('A', newVal)
-    cpu.UpdateFlags(instruction.flags, accuVal, memVal, newVal, False, False)
+    cpu.UpdateFlags(instruction.flags, accuVal, immVal, newVal, False, False)
     return False
 
+def andImm(cpu, instruction):
+    immVal = GetValue(cpu, 'IMM')
+    return doAnd(cpu, instruction, immVal)
+
+def andZero(cpu, instruction):
+    memVal = GetValue(cpu, 'ZERO')
+    return doAnd(cpu, instruction, memVal)
+
+def andZeroX(cpu, instruction):
+    memVal = GetValue(cpu, 'ZEROX')
+    return doAnd(cpu, instruction, memVal)
+
+def andAbs(cpu, instruction):
+    memVal = GetValue(cpu, 'ABS')
+    return doAnd(cpu, instruction, memVal)
+
+def andAbsX(cpu, instruction):
+    memVal = GetValue(cpu, 'ABSX')
+    return doAnd(cpu, instruction, memVal)
+
+def andAbsY(cpu, instruction):
+    memVal = GetValue(cpu, 'ABSY')
+    return doAnd(cpu, instruction, memVal)
+
+def andIndX(cpu, instruction):
+    memVal = GetValue(cpu, 'INDX')
+    return doAnd(cpu, instruction, memVal)
+
+def andIndY(cpu, instruction):
+    memVal = GetValue(cpu, 'INDY')
+    return doAnd(cpu, instruction, memVal)
 
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - Appendix A
-                # opcode : Instruction(mnem, function, size, cycles), 
-flags = {   'ADC', ['N', 'Z', 'C', 'V'] }
+flags = {   'ADC', ['N', 'Z', 'C', 'V'],
+            'AND', ['N', 'Z']}
 
+           # opcode : Instruction(mnem, function, size, cycles), 
 instructions = {0x69: Instruction('ADCimm', adcImm, flags['ADC'], 2, 2),
                 0x65: Instruction('ADCzero', adcZero, flags['ADC'], 2, 3),
                 0x75: Instruction('ADCzeroX', adcZeroX, flags['ADC'], 2, 4),
@@ -147,4 +140,12 @@ instructions = {0x69: Instruction('ADCimm', adcImm, flags['ADC'], 2, 2),
                 0x79: Instruction('ADCabsY', adcAbsY, flags['ADC'], 3, 4),
                 0x61: Instruction('ADCindX', adcIndX, flags['ADC'], 2, 6),
                 0x71: Instruction('ADCindY', adcIndY, flags['ADC'], 2, 5),
+                0x29: Instruction('ANDimm', andImm, flags['AND'], 2, 2),
+                0x25: Instruction('ANDzero', andImm, flags['AND'], 2, 3),
+                0x35: Instruction('ANDzeroX', andImm, flags['AND'], 2, 4),
+                0x2d: Instruction('ANDabs', andImm, flags['AND'], 3, 4),
+                0x3d: Instruction('ANDabsX', andImm, flags['AND'], 3, 4),
+                0x39: Instruction('ANDabsY', andImm, flags['AND'], 3, 4),
+                0x21: Instruction('ANDindX', andImm, flags['AND'], 2, 6),
+                0x31: Instruction('ANDindY', andImm, flags['AND'], 2, 5),
                 }
