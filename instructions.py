@@ -43,7 +43,8 @@ def adcZeroX(cpu, instruction):
     zeroOffset = cpu.ReadRelPC(1)
     xVal = cpu.GetRegister('X')
 
-    memVal = cpu.ReadMemory(zeroOffset + xVal)
+    # because its Zero page relative, this address wraps if it goes past $00FF
+    memVal = cpu.ReadMemory((zeroOffset + xVal) & 0xFF)
     accuVal = cpu.GetRegister('A')
     carryVal = 1 if cpu.GetFlag('C') else 0
 
@@ -95,7 +96,21 @@ def adcAbsY(cpu, instruction):
     return False
 
 
+def adcIndY(cpu, instruction):
+    zeroOffset = cpu.ReadRelPC(1)
+    yVal = cpu.GetRegister('Y')
 
+    # ASSUMING THE FOLLOWING:
+    # because its Zero page relative, this address wraps if it goes past $00FF
+    memVal = cpu.ReadMemory((zeroOffset + yVal) & 0xFF)
+    accuVal = cpu.GetRegister('A')
+    carryVal = 1 if cpu.GetFlag('C') else 0
+
+    newVal = accuVal + memVal + carryVal
+
+    cpu.SetRegister('A', newVal)
+    cpu.UpdateFlags(instruction.flags, accuVal, memVal, newVal, False, False)
+    return False
 
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - Appendix A
                 # opcode : Instruction(mnem, function, size, cycles), 
@@ -103,8 +118,10 @@ flags = {   'ADC', ['N', 'Z', 'C', 'V'] }
 
 instructions = {0x69: Instruction('ADCimm', adcImm, flags['ADC'], 2, 2),
                 0x65: Instruction('ADCzero', adcZero, flags['ADC'], 2, 3),
-                0x75: Instruction('ADCzerox', adcZeroX, flags['ADC'], 2, 4),
+                0x75: Instruction('ADCzeroX', adcZeroX, flags['ADC'], 2, 4),
                 0x6D: Instruction('ADCabs', adcAbs, flags['ADC'], 3, 4),
                 0x7D: Instruction('ADCabsX', adcAbsX, flags['ADC'], 3, 4),
                 0x79: Instruction('ADCabsY', adcAbsY, flags['ADC'], 3, 4),
+                0x61: Instruction('ADCindX', adcZeroX, flags['ADC'], 2, 6),
+                0x71: Instruction('ADCindY', adcIndY, flags['ADC'], 2, 5),
                 }
