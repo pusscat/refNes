@@ -21,9 +21,9 @@ def GetValue(cpu, operType):
         return cpu.ReadRelPC(1)
     if operType is 'ZERO':
         return cpu.ReadMemory(cpu.ReadRelPC(1))
-    if operType is 'ZEROX' or operType is 'INDIRECTX':
+    if operType is 'ZEROX' or operType is 'INDX':
         return cpu.ReadMemory((cpu.ReadRelPC(1) + cpu.GetRegister('X')) & 0xFF)
-    if operType is 'ZEROY' or operType is 'INDIRECTY':
+    if operType is 'ZEROY'
         return cpu.ReadMemory((cpu.ReadRelPC(1) + cpu.GetRegister('Y')) & 0xFF)
     if operType is 'ABS':
         return cpu.ReadMemory(cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1))
@@ -31,6 +31,12 @@ def GetValue(cpu, operType):
         return cpu.ReadMemory(cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1) + cpu.GetRegister('X'))
     if operType is 'ABSY':
         return cpu.ReadMemory(cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1) + cpu.GetRegister('Y'))
+    if operType is 'INDX':
+        addrPtr = ((cpu.ReadRelPC(1) + cpu.GetRegister('X')) & 0xFF)
+        return cpu.ReadMemory(cpu.ReadMemory(addrPtr+1) << 8 + cpu.ReadMemory(addrPtr))
+    if operType is 'INDY':
+        addrPtr = ((cpu.ReadRelPC(1) + cpu.GetRegister('Y')) & 0xFF)
+        return cpu.ReadMemory(cpu.ReadMemory(addrPtr+1) << 8 + cpu.ReadMemory(addrPtr))
     return value
 
 def GetAddress(cpu, operType):
@@ -106,6 +112,17 @@ def adcAbsY(cpu, instruction):
     return False
 
 
+def adcIndX(cpu, instruction):
+    memVal = GetValue(cpu, 'INDX')
+    accuVal = cpu.GetRegister('A')
+    carryVal = 1 if cpu.GetFlag('C') else 0
+
+    newVal = accuVal + memVal + carryVal
+
+    cpu.SetRegister('A', newVal)
+    cpu.UpdateFlags(instruction.flags, accuVal, memVal, newVal, False, False)
+    return False
+
 def adcIndY(cpu, instruction):
     memVal = GetValue(cpu, 'INDY')
     accuVal = cpu.GetRegister('A')
@@ -117,6 +134,7 @@ def adcIndY(cpu, instruction):
     cpu.UpdateFlags(instruction.flags, accuVal, memVal, newVal, False, False)
     return False
 
+
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - Appendix A
                 # opcode : Instruction(mnem, function, size, cycles), 
 flags = {   'ADC', ['N', 'Z', 'C', 'V'] }
@@ -127,6 +145,6 @@ instructions = {0x69: Instruction('ADCimm', adcImm, flags['ADC'], 2, 2),
                 0x6D: Instruction('ADCabs', adcAbs, flags['ADC'], 3, 4),
                 0x7D: Instruction('ADCabsX', adcAbsX, flags['ADC'], 3, 4),
                 0x79: Instruction('ADCabsY', adcAbsY, flags['ADC'], 3, 4),
-                0x61: Instruction('ADCindX', adcZeroX, flags['ADC'], 2, 6),
+                0x61: Instruction('ADCindX', adcIndX, flags['ADC'], 2, 6),
                 0x71: Instruction('ADCindY', adcIndY, flags['ADC'], 2, 5),
                 }
