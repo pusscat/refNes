@@ -19,7 +19,7 @@ class Instruction(object):
 def adcImm(cpu, instruction):
     immVal = cpu.ReadRelPC(1)
     accuVal = cpu.GetRegister('A')
-    if cpu.GetFlag('C') carryVal = 1 else carryVal = 0
+    carryVal = 1 if cpu.GetFlag('C') else 0
 
     newVal = accuVal + immVal + carryVal
 
@@ -31,7 +31,7 @@ def adcZero(cpu, instruction):
     zeroOffset = cpu.ReadRelPC(1)
     memVal = cpu.ReadMemory(zeroOffset)
     accuVal = cpu.GetRegister('A')
-    if cpu.GetFlag('C') carryVal = 1 else carryVal = 0
+    carryVal = 1 if cpu.GetFlag('C') else 0
 
     newVal = accuVal + memVal + carryVal
 
@@ -45,7 +45,20 @@ def adcZeroX(cpu, instruction):
 
     memVal = cpu.ReadMemory(zeroOffset + xVal)
     accuVal = cpu.GetRegister('A')
-    if cpu.GetFlag('C') carryVal = 1 else carryVal = 0
+    carryVal = 1 if cpu.GetFlag('C') else 0
+
+    newVal = accuVal + memVal + carryVal
+
+    cpu.SetRegister('A', newVal)
+    cpu.UpdateFlags(instruction.flags, accuVal, memVal, newVal, False, False)
+    return False
+
+def adcAbs(cpu, instruction):
+    # 6502 is little endian, so next byte is least sig, one after is most sig
+    absOffset = cpu.ReadRelPc(2) << 8 + cpu.ReadRelPc(1)
+    memVal = cpu.ReadMemory(absOffset)
+    accuVal = cpu.GetRegister('A')
+    carryVal = 1 if cpu.GetFlag('C') else 0
 
     newVal = accuVal + memVal + carryVal
 
@@ -61,4 +74,5 @@ flags = {   'ADC', ['N', 'Z', 'C', 'V'] }
 instructions = {0x69: Instruction('ADCimm', adcImm, flags['ADC'], 2, 2),
                 0x65: Instruction('ADCzero', adcZero, flags['ADC'], 2, 3),
                 0x75: Instruction('ADCzerox', adcZeroX, flags['ADC'], 2, 4),
+                0x6D: Instruction('ADCabs', adcAbs, flags['ADC'], 2, 4),
                 }
