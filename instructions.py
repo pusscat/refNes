@@ -142,10 +142,20 @@ def doBit(cpu, instruction):
     cpu.SetFlag('Z', 1 if value & accuVal != 0 else 0)
     return False
 
+def doBmi(cpu, instruction):
+    return doBranch(cpu, instruction, 'N', True)
+
 def doBne(cpu, instruction):
     return doBranch(cpu, instruction, 'Z', False)
 
+def doBpl(cpu, instruction):
+    return doBranch(cpu, instruction, 'N', False)
 
+def doBrk(cpu, instruction):
+    cpu.SetFlag('I', 1)
+    cpu.PushWord(cpu.GetRegister('PC')+2)
+    cpu.PushByte(cpu.GetRegister('S'))
+    return False
 
 
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - Appendix A
@@ -156,7 +166,10 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'BCS': [],
             'BEQ': [],
             'BIT': [],
+            'BMI': [],
             'BNE': [],
+            'BPL': [],
+            'BRK': [],
         }
 
            # opcode : Instruction(mnem, function, size, cycles), 
@@ -186,5 +199,8 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xF0: Instruction('BEQ', doBeq, 'PCREL', 2, 2),
                 0x24: Instruction('BIT', doBeq, 'ZERO', 2, 3),
                 0x2C: Instruction('BIT', doBeq, 'ABS', 3, 4),
+                0x30: Instruction('BMI', doBmi, 'PCREL', 2, 2),
                 0xD0: Instruction('BNE', doBne, 'PCREL', 2, 2),
+                0x10: Instruction('BPL', doBpl, 'PCREL', 2, 2),
+                0x00: Instruction('BRK', doBrk, '', 1, 7),
                 }

@@ -60,6 +60,22 @@ class CPU(object):
         self.regs[name].SetValue(value)
         return value & 0xFF
 
+    def PushByte(self, value):
+        stackAddr = self.GetRegister('S')
+        self.SetMemory(stackAddr, value)a
+        stackAddr -= 1
+        self.SetRegister('S', stackAddr)
+        return stackAddr
+
+    def PushWord(self, value):
+        pass
+
+    def PopByte(self):
+        pass
+
+    def PopWord(self):
+        pass
+
     def SetFlag(self, flagName, value):
         flags = {   'C':0,  # Carry
                     'Z':1,  # Zero
