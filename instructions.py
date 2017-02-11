@@ -40,6 +40,14 @@ def GetValue(cpu, operType):
     return value
 
 def GetAddress(cpu, operType):
+    if operType is 'ZERO':
+        return cpu.ReadRelPC(1)
+    if operType is 'ZEROX':
+        return (cpu.ReadRelPC(1) + cpu.GetRegister('X')) & 0xFF
+    if operType is 'ABS':
+        return cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1)
+    if operType is 'ABSX':
+        return cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1) + cpu.GetRegister('X')
     return address
 
 
@@ -127,9 +135,53 @@ def andIndY(cpu, instruction):
     memVal = GetValue(cpu, 'INDY')
     return doAnd(cpu, instruction, memVal)
 
+def doAsl(cpu, instruction, address):
+    memVal = cpu.ReadMemory(address)
+
+    newVal = memVal << 1
+
+    if newVal > 0xFF:
+        cpu.SetFlag('C')
+    cpu.SetMemory(address, newVal)
+    cpu.UpdateFlags(intruction.flags, memVal, memVal, newVal, False, False)
+    return False
+
+def aslAccu(cpu, instruction):
+    accuVal = cpu.GetRegister('A')
+
+    newVal = accuVal << 1
+
+    if newVal > 0xFF:
+       cpu.SetFlag('C')
+
+    cpu.SetRegister('A', newVal)
+    cpu.UpdateFlags(intruction.flags, accuVal, accuVal, newVal, False, False)
+    return False
+
+def aslZero(cpu, instruction):
+    addrVal = GetAddress(cpu, 'ZERO')
+    return doAsl(cpu, instruction, addrVal)
+
+def aslZeroX(cpu, instruction):
+    addrVal = GetAddress(cpu, 'ZEROX')
+    return doAsl(cpu, instruction, addrVal)
+
+def aslAbs(cpu, instruction):
+    addrVal = GetAddress(cpu, 'ABS')
+    return doAsl(cpu, instruction, addrVal)
+
+def aslAbsX(cpu, instruction):
+    addrVal = GetAddress(cpu, 'ABSX')
+    return doAsl(cpu, instruction, addrVal)
+
+
+
+
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - Appendix A
 flags = {   'ADC', ['N', 'Z', 'C', 'V'],
-            'AND', ['N', 'Z']}
+            'AND', ['N', 'Z'],
+            'ASL', ['N', 'Z'], #set C manually
+        }
 
            # opcode : Instruction(mnem, function, size, cycles), 
 instructions = {0x69: Instruction('ADCimm', adcImm, flags['ADC'], 2, 2),
@@ -148,4 +200,9 @@ instructions = {0x69: Instruction('ADCimm', adcImm, flags['ADC'], 2, 2),
                 0x39: Instruction('ANDabsY', andImm, flags['AND'], 3, 4),
                 0x21: Instruction('ANDindX', andImm, flags['AND'], 2, 6),
                 0x31: Instruction('ANDindY', andImm, flags['AND'], 2, 5),
+                0x0A: Instruction('ASLaccu', aslAccu, flags['ASL'], 1, 2),
+                0x06: Instruction('ASLzero', aslZero, flags['ASL'], 2, 5),
+                0x16: Instruction('ASLzeroX', aslZeroX, flags['ASL'], 2, 6),
+                0x0E: Instruction('ASLabs', aslAbs, flags['ASL'], 3, 6),
+                0x1E: Instruction('ASLabsX', aslAbsX, flags['ASL'], 3, 7),
                 }

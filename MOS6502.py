@@ -12,7 +12,7 @@ class Register(object):
         return self.value
     
     def SetValue(self, value):
-        self.value = value
+        self.value = value & 0xFF
 
     def GetCurrentSymb(self):
         return self.symbVal[-1]
@@ -50,7 +50,7 @@ class CPU(object):
         return self.memory[self.GetRegister('PC')+offset]
 
     def SetMemory(self, address, value): # always write 1 byte
-        self.memory[address] = value
+        self.memory[address] = value & 0xFF
         return value
 
     def GetRegister(name):
@@ -58,7 +58,7 @@ class CPU(object):
 
     def SetRegister(self, name, value):
         self.regs[name].SetValue(value)
-        return value
+        return value & 0xFF
 
     def SetFlag(self, flagName, value):
         flags = {   'C':0,  # Carry
@@ -84,7 +84,7 @@ class CPU(object):
 
     def CreatecarryCondition(oldDst, oldSrc, subOp):
         if subOp:
-            return ((~oldSrc + 1) > oldDst)
+            return ((~oldSrc + 1) & 0xFF > oldDst)
         else:
             return ((oldSrc > 0) and (oldDst > (0xff - oldSrc)))
 
