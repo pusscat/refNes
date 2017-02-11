@@ -133,6 +133,15 @@ def doBcs(cpu, instruction):
 def doBeq(cpu, instruction):
     return doBranch(cpu, instruction, 'Z', True)
 
+def doBit(cpu, instruction):
+    value = cpu.GetValue(instruction.operType)
+    accuVal = cpu.GetRegister('A')
+
+    cpu.SetFlag('N', (value & (1 << 7)) >> 7)
+    cpu.SetFlag('V', (value & (1 << 6)) >> 6)
+    cpu.SetFlag('Z', 1 if value & accuVal != 0 else 0)
+    return False
+
 def doBne(cpu, instruction):
     return doBranch(cpu, instruction, 'Z', False)
 
@@ -146,6 +155,7 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'BCC': [],
             'BCS': [],
             'BEQ': [],
+            'BIT': [],
             'BNE': [],
         }
 
@@ -174,5 +184,7 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x90: Instruction('BCC', doBcc, 'PCREL', 2, 2),
                 0xB0: Instruction('BCS', doBcs, 'PCREL', 2, 2),
                 0xF0: Instruction('BEQ', doBeq, 'PCREL', 2, 2),
+                0x24: Instruction('BIT', doBeq, 'ZERO', 2, 3),
+                0x2C: Instruction('BIT', doBeq, 'ABS', 3, 4),
                 0xD0: Instruction('BNE', doBne, 'PCREL', 2, 2),
                 }
