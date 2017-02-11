@@ -106,11 +106,12 @@ def doAslAccu(cpu, instruction):
     cpu.UpdateFlags(intruction.flags, accuVal, accuVal, newVal, False, False)
     return False
 
-def doBcc(cpu, instruction):
-    carryVal = cpu.GetFlag('C')
-    if carryVal:
-        return False    # False because we dont change PC in this case
-    
+
+def doBranch(cpu, instruction, flag, value):
+    flagVal = cpu.GetFlag(flag)
+    if flagVal is not value:
+        return False
+
     target = cpu.GetValue(cpu, 'PCREL')
     currPC = cpu.GetRegister('PC')
     cpu.SetRegister('PC', target)
@@ -123,11 +124,29 @@ def doBcc(cpu, instruction):
 
     return True         # true because we change PC in this case
 
+def doBcc(cpu, instruction):
+    return doBranch(cpu, instruction, 'C', False)
+
+def doBcs(cpu, instruction):
+    return doBranch(cpu, instruction, 'C', True)
+
+def doBeq(cpu, instruction):
+    return doBranch(cpu, instruction, 'Z', True)
+
+def doBne(cpu, instruction):
+    return doBranch(cpu, instruction, 'Z', False)
+
+
+
+
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - Appendix A
 flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'AND': ['N', 'Z'],
             'ASL': ['N', 'Z'], #set C manually
             'BCC': [],
+            'BCS': [],
+            'BEQ': [],
+            'BNE': [],
         }
 
            # opcode : Instruction(mnem, function, size, cycles), 
@@ -153,4 +172,7 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x0E: Instruction('ASL', doAsl, 'ABS', 3, 6),
                 0x1E: Instruction('ASL', doAsl, 'ABSX', 3, 7),
                 0x90: Instruction('BCC', doBcc, 'PCREL', 2, 2),
+                0xB0: Instruction('BCS', doBcs, 'PCREL', 2, 2),
+                0xF0: Instruction('BEQ', doBeq, 'PCREL', 2, 2),
+                0xD0: Instruction('BNE', doBne, 'PCREL', 2, 2),
                 }
