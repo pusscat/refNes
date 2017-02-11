@@ -1,10 +1,13 @@
 class Instruction(object):
-    def __init__(self, mnem, function, operType, flags, size, cycles):
+    def __init__(self, mnem, function, operType, size, cycles):
+        global flags
+
         self.mnem = mnem
         self.function = function
         self.operType = operType
-        self.flags = flags
+        self.flags = flags[mnem]
         self.cycles = cycles
+        self.extraCycles = 0
         self.size = size
 
     def execute(cpu):
@@ -12,7 +15,11 @@ class Instruction(object):
         # if the function returns false implying it hasnt changed PC
         if self.function(cpu, instruction) is False:
             cpu.incPC(self.size)
-        cpu.incCycles(self.cycles)
+        cpu.incCycles(self.cycles + self.extraCycles)
+        self.extraCycles = 0
+
+    def addCycles(cycles):
+        self.extraCycles = cycles
 
 # instruction functions return True if they modify PC
 # return false otherwise
@@ -38,6 +45,8 @@ def GetValue(cpu, operType):
     if operType is 'INDY':
         addrPtr = ((cpu.ReadRelPC(1) + cpu.GetRegister('Y')) & 0xFF)
         return cpu.ReadMemory(cpu.ReadMemory(addrPtr+1) << 8 + cpu.ReadMemory(addrPtr))
+    if operType is 'PCREL':
+        return cpu.ReadRelPC(1) + cpu.GetRegister('PC')
     return value
 
 def GetAddress(cpu, operType):
@@ -97,32 +106,51 @@ def doAslAccu(cpu, instruction):
     cpu.UpdateFlags(intruction.flags, accuVal, accuVal, newVal, False, False)
     return False
 
+def doBcc(cpu, instruction):
+    carryVal = cpu.GetFlag('C')
+    if carryVal:
+        return False    # False because we dont change PC in this case
+    
+    target = cpu.GetValue(cpu, 'PCREL')
+    currPC = cpu.GetRegister('PC')
+    cpu.SetRegister('PC', target)
+   
+    # Add 1 cycle because we branched - add an extra if we jumped a page boundary
+    if target & 0xFF00 != currPC & 0xFF00:
+        instruction.addCycles(2)
+    else:
+        instruction.addCycles(1)
+
+    return True         # true because we change PC in this case
+
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - Appendix A
-flags = {   'ADC', ['N', 'Z', 'C', 'V'],
-            'AND', ['N', 'Z'],
-            'ASL', ['N', 'Z'], #set C manually
+flags = {   'ADC': ['N', 'Z', 'C', 'V'],
+            'AND': ['N', 'Z'],
+            'ASL': ['N', 'Z'], #set C manually
+            'BCC': [],
         }
 
            # opcode : Instruction(mnem, function, size, cycles), 
-instructions = {0x69: Instruction('ADC', doAdc, 'IMM', flags['ADC'], 2, 2),
-                0x65: Instruction('ADC', doAdc, 'ZERO' flags['ADC'], 2, 3),
-                0x75: Instruction('ADC', doAdc, 'ZEROX', flags['ADC'], 2, 4),
-                0x6D: Instruction('ADC', doAdc, 'ABS', flags['ADC'], 3, 4),
-                0x7D: Instruction('ADC', doAdc, 'ABSX', flags['ADC'], 3, 4),
-                0x79: Instruction('ADC', doAdc, 'ABSY', flags['ADC'], 3, 4),
-                0x61: Instruction('ADC', doAdc, 'INDX', flags['ADC'], 2, 6),
-                0x71: Instruction('ADC', doAdc, 'INDY', flags['ADC'], 2, 5),
-                0x29: Instruction('AND', doAnd, 'IMM', flags['AND'], 2, 2),
-                0x25: Instruction('AND', doAnd, 'ZERO', flags['AND'], 2, 3),
-                0x35: Instruction('AND', doAnd, 'ZEROX', flags['AND'], 2, 4),
-                0x2d: Instruction('AND', doAnd, 'ABS', flags['AND'], 3, 4),
-                0x3d: Instruction('AND', doAnd, 'ABSX', flags['AND'], 3, 4),
-                0x39: Instruction('AND', doAnd, 'ABSY', flags['AND'], 3, 4),
-                0x21: Instruction('AND', doAnd, 'INDX', flags['AND'], 2, 6),
-                0x31: Instruction('AND', doAnd, 'INDY', flags['AND'], 2, 5),
-                0x0A: Instruction('ASL', doAslAccu, '', flags['ASL'], 1, 2),
-                0x06: Instruction('ASL', doAsl, 'ZERO', flags['ASL'], 2, 5),
-                0x16: Instruction('ASL', doAsl, 'ZEROX', flags['ASL'], 2, 6),
-                0x0E: Instruction('ASL', doAsl, 'ABS', flags['ASL'], 3, 6),
-                0x1E: Instruction('ASL', doAsl, 'ABSX', flags['ASL'], 3, 7),
+instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
+                0x65: Instruction('ADC', doAdc, 'ZERO',  2, 3),
+                0x75: Instruction('ADC', doAdc, 'ZEROX', 2, 4),
+                0x6D: Instruction('ADC', doAdc, 'ABS', 3, 4),
+                0x7D: Instruction('ADC', doAdc, 'ABSX', 3, 4),
+                0x79: Instruction('ADC', doAdc, 'ABSY', 3, 4),
+                0x61: Instruction('ADC', doAdc, 'INDX', 2, 6),
+                0x71: Instruction('ADC', doAdc, 'INDY', 2, 5),
+                0x29: Instruction('AND', doAnd, 'IMM', 2, 2),
+                0x25: Instruction('AND', doAnd, 'ZERO', 2, 3),
+                0x35: Instruction('AND', doAnd, 'ZEROX', 2, 4),
+                0x2d: Instruction('AND', doAnd, 'ABS', 3, 4),
+                0x3d: Instruction('AND', doAnd, 'ABSX', 3, 4),
+                0x39: Instruction('AND', doAnd, 'ABSY', 3, 4),
+                0x21: Instruction('AND', doAnd, 'INDX', 2, 6),
+                0x31: Instruction('AND', doAnd, 'INDY', 2, 5),
+                0x0A: Instruction('ASL', doAslAccu, '', 1, 2),
+                0x06: Instruction('ASL', doAsl, 'ZERO', 2, 5),
+                0x16: Instruction('ASL', doAsl, 'ZEROX', 2, 6),
+                0x0E: Instruction('ASL', doAsl, 'ABS', 3, 6),
+                0x1E: Instruction('ASL', doAsl, 'ABSX', 3, 7),
+                0x90: Instruction('BCC', doBcc, 'PCREL', 2, 2),
                 }
