@@ -24,7 +24,7 @@ class Instruction(object):
 # instruction functions return True if they modify PC
 # return false otherwise
 
-def GetValue(cpu, operType):
+def GetValue(cpu, instruction, operType):
     if operType is 'IMM':
         return cpu.ReadRelPC(1)
     if operType is 'ZERO':
@@ -36,20 +36,29 @@ def GetValue(cpu, operType):
     if operType is 'ABS':
         return cpu.ReadMemory(cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1))
     if operType is 'ABSX':
-        return cpu.ReadMemory(cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1) + cpu.GetRegister('X'))
+        lowOrder = cpu.ReadRelPC(1) + cpu.GetRegister('X')
+        if lowOrder > 0xFF:
+            instruction.addCycles(1)
+        return cpu.ReadMemory(cpu.ReadRelPC(2) << 8 + lowOrder)
     if operType is 'ABSY':
-        return cpu.ReadMemory(cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1) + cpu.GetRegister('Y'))
+        lowOrder = cpu.ReadRelPC(1) + cpu.GetRegister('Y')
+        if lowOrder > 0xFF:
+            instruction.addCycles(1)
+        return cpu.ReadMemory(cpu.ReadRelPC(2) << 8 + lowOrder)
     if operType is 'INDX':
         addrPtr = ((cpu.ReadRelPC(1) + cpu.GetRegister('X')) & 0xFF)
         return cpu.ReadMemory(cpu.ReadMemory(addrPtr+1) << 8 + cpu.ReadMemory(addrPtr))
     if operType is 'INDY':
-        addrPtr = ((cpu.ReadRelPC(1) + cpu.GetRegister('Y')) & 0xFF)
-        return cpu.ReadMemory(cpu.ReadMemory(addrPtr+1) << 8 + cpu.ReadMemory(addrPtr))
+        highOrder = cpu.ReadMemory(cpu.ReadRelPC(1)+1) << 8
+        lowOrder = cpu.ReadMemory(cpu.ReadRelPC(1)) + cpu.GetRegister('Y')
+        if lowOrder > 0xFF:
+           instruction.addCycles(1)
+        return cpu.ReadMemory(highOrder + lowOrder)
     if operType is 'PCREL':
         return cpu.ReadRelPC(1) + cpu.GetRegister('PC')
     return value
 
-def GetAddress(cpu, operType):
+def GetAddress(cpu, instruction, operType):
     if operType is 'ZERO':
         return cpu.ReadRelPC(1)
     if operType is 'ZEROX':
@@ -57,6 +66,7 @@ def GetAddress(cpu, operType):
     if operType is 'ABS':
         return cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1)
     if operType is 'ABSX':
+        if 
         return cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1) + cpu.GetRegister('X')
     return address
 
@@ -114,7 +124,7 @@ def doBranch(cpu, instruction, flag, value):
 
     target = cpu.GetValue(cpu, 'PCREL')
     currPC = cpu.GetRegister('PC')
-    cpu.SetRegister('PC', target)
+    cpu.SetPC(target)
    
     # Add 1 cycle because we branched - add an extra if we jumped a page boundary
     if target & 0xFF00 != currPC & 0xFF00:
@@ -152,7 +162,7 @@ def doBpl(cpu, instruction):
     return doBranch(cpu, instruction, 'N', False)
 
 def doBrk(cpu, instruction):
-    cpu.SetFlag('I', 1)
+    cpu.SetFlag('B', 1)
     cpu.PushWord(cpu.GetRegister('PC')+2)
     cpu.PushByte(cpu.GetRegister('S'))
     return False

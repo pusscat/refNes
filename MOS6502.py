@@ -56,25 +56,33 @@ class CPU(object):
     def GetRegister(name):
         return self.regs[name].GetValue()
 
+    def SetPC(self, value):
+        self.regs['PC'].SetValue(value & 0xFFFF)
+
     def SetRegister(self, name, value):
-        self.regs[name].SetValue(value)
+        self.regs[name].SetValue(value & 0xFF)
         return value & 0xFF
 
     def PushByte(self, value):
-        stackAddr = self.GetRegister('S')
-        self.SetMemory(stackAddr, value)a
+        stackAddr = 0x0100 + self.GetRegister('S')
+        self.SetMemory(stackAddr, value)
         stackAddr -= 1
         self.SetRegister('S', stackAddr)
         return stackAddr
 
     def PushWord(self, value):
-        pass
+        self.PushByte((value & 0xFF00) >> 8)
+        return self.PushByte(value & 0xFF)
+        
 
     def PopByte(self):
-        pass
+        stackAddr = 0x0100 + self.GetRegister('S')
+        value = self.ReadMemory(stackAddr)
+        self.SetRegister('S', stackAddr+1)
+        return value
 
     def PopWord(self):
-        pass
+        return self.PopByte() + (self.PopByte() << 8)
 
     def SetFlag(self, flagName, value):
         flags = {   'C':0,  # Carry
