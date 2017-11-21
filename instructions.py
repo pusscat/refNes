@@ -167,6 +167,11 @@ def doBrk(cpu, instruction):
     cpu.PushByte(cpu.GetRegister('S'))
     return False
 
+def doBvc(cpu, instruction):
+    return doBranch(cpu, instruction, 'V', False)
+
+def doBvs(cpu, instruction:
+    return doBranch(cpu, instruction, 'V', True)
 
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - Appendix A
 flags = {   'ADC': ['N', 'Z', 'C', 'V'],
@@ -180,6 +185,8 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'BNE': [],
             'BPL': [],
             'BRK': [],
+            'BVC': [],
+            'BVS': [],
         }
 
            # opcode : Instruction(mnem, function, size, cycles), 
@@ -213,4 +220,6 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xD0: Instruction('BNE', doBne, 'PCREL', 2, 2),
                 0x10: Instruction('BPL', doBpl, 'PCREL', 2, 2),
                 0x00: Instruction('BRK', doBrk, '', 1, 7),
+                0x50: Instruction('BVC', doBvc, 'PCREL', 2, 2),
+                0x70: Instruction('BVS', doBvs, 'PCREL', 2, 2),
                 }
