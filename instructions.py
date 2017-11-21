@@ -79,7 +79,7 @@ def doAdc(cpu, instruction):
     newVal = accuVal + value + carryVal
 
     cpu.SetRegister('A', newVal)
-    cpu.UpdateFlags(instruction.flags, accuVal, immVal, newVal, False, False)
+    cpu.UpdateFlags(instruction.flags, accuVal, value, newVal, False, False)
     return False
 
 def doAnd(cpu, instruction):
@@ -89,7 +89,7 @@ def doAnd(cpu, instruction):
     newVal = accuVal & immVal
 
     cpu.SetRegister('A', newVal)
-    cpu.UpdateFlags(instruction.flags, accuVal, immVal, newVal, False, False)
+    cpu.UpdateFlags(instruction.flags, accuVal, value, newVal, False, False)
     return False
 
 def doAsl(cpu, instruction):
@@ -189,6 +189,15 @@ def doClv(cpu, instruction):
     cpu.SetFlag('V', 0)
     return False
 
+def doCmp(cpu, instruction):
+    value = cpu.GetValue(instruction.operType)
+    accuVal = cpu.GetRegister('A')
+    
+    newVal = accuVal - value
+    # Dont set a register in compare 
+    cpu.UpdateFlags(instruction.flags, accuVal, value, newVal, False, False)
+    return False
+
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - Appendix A
 flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'AND': ['N', 'Z'],
@@ -207,9 +216,10 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'CLD': [],
             'CLI': [],
             'CLV': [],
+            'CMP': ['N', 'Z', 'C'],
         }
 
-           # opcode : Instruction(mnem, function, size, cycles), 
+           # opcode : Instruction(mnem, function, operType, size, cycles) 
 instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x65: Instruction('ADC', doAdc, 'ZERO',  2, 3),
                 0x75: Instruction('ADC', doAdc, 'ZEROX', 2, 4),
@@ -246,4 +256,11 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xD8: Instruction('CLD', doCld, '', 1, 2),
                 0x58: Instruction('CLI', doCli, '', 1, 2),
                 0xB8: Instruction('CLV', doClv, '', 1, 2),
+                0xC0: Instruction('CMP', doCmp, 'IMM', 2, 2),
+                0xC5: Instruction('CMP', doCmp, 'ZERO', 2, 3),
+                0xD5: Instruction('CMP', doCmp, 'ZEROX', 2, 4),
+                0xCD: Instruction('CMP', doCmp, 'ABS', 3, 4),
+                0xDD: Instruction('CMP', doCmp, 'ABSX', 3, 4),
+                0xC1: Instruction('CMP', doCmp, 'INDX', 2, 6),
+                0xD1: Instruction('CMP', doCmp, 'INDY', 2, 5),
                 }
