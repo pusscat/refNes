@@ -64,10 +64,11 @@ class CPU(object):
         return value & 0xFF
 
     def PushByte(self, value):
-        stackAddr = 0x0100 + self.GetRegister('S')
+        regS = self.GetRegister('S')
+        stackAddr = 0x0100 + regS
         self.SetMemory(stackAddr, value)
-        stackAddr -= 1
-        self.SetRegister('S', stackAddr)
+        regS -= 1
+        self.SetRegister('S', regS)
         return stackAddr
 
     def PushWord(self, value):
