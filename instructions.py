@@ -10,28 +10,29 @@ class Instruction(object):
         self.extraCycles = 0
         self.size = size
 
-    def execute(cpu):
+    def execute(self, cpu):
         # emulate the instruction and add instruction size to PC
         # if the function returns false implying it hasnt changed PC
-        if self.function(cpu, instruction) is False:
+        if self.function(cpu, self) is False:
             cpu.incPC(self.size)
         cpu.incCycles(self.cycles + self.extraCycles)
         self.extraCycles = 0
 
-    def addCycles(cycles):
+    def addCycles(self, cycles):
         self.extraCycles = cycles
 
 # instruction functions return True if they modify PC
 # return false otherwise
 
-def GetValue(cpu, instruction, operType):
+def GetValue(cpu, instruction):
+    operType = instruction.operType
     if operType is 'IMM':
         return cpu.ReadRelPC(1)
     if operType is 'ZERO':
         return cpu.ReadMemory(cpu.ReadRelPC(1))
     if operType is 'ZEROX' or operType is 'INDX':
         return cpu.ReadMemory((cpu.ReadRelPC(1) + cpu.GetRegister('X')) & 0xFF)
-    if operType is 'ZEROY'
+    if operType is 'ZEROY':
         return cpu.ReadMemory((cpu.ReadRelPC(1) + cpu.GetRegister('Y')) & 0xFF)
     if operType is 'ABS':
         return cpu.ReadMemory(cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1))
@@ -58,7 +59,8 @@ def GetValue(cpu, instruction, operType):
         return cpu.ReadRelPC(1) + cpu.GetRegister('PC')
     return value
 
-def GetAddress(cpu, instruction, operType):
+def GetAddress(cpu, instruction):
+    operType = instruction.operType
     if operType is 'ZERO':
         return cpu.ReadRelPC(1)
     if operType is 'ZEROX':
@@ -66,13 +68,12 @@ def GetAddress(cpu, instruction, operType):
     if operType is 'ABS':
         return cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1)
     if operType is 'ABSX':
-        if 
         return cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1) + cpu.GetRegister('X')
     return address
 
 
 def doAdc(cpu, instruction):
-    value = GetValue(cpu, self.operType)
+    value = GetValue(cpu, instruction)
     accuVal = cpu.GetRegister('A')
     carryVal = 1 if cpu.GetFlag('C') else 0
 
@@ -83,7 +84,7 @@ def doAdc(cpu, instruction):
     return False
 
 def doAnd(cpu, instruction):
-    value = GetValue(cpu, self.operType)
+    value = GetValue(cpu, instruction)
     accuVal = cpu.GetRegister('A')
 
     newVal = accuVal & immVal
@@ -93,7 +94,7 @@ def doAnd(cpu, instruction):
     return False
 
 def doAsl(cpu, instruction):
-    addrVal = GetAddress(cpu, self.operType)
+    addrVal = GetAddress(cpu, instruction)
     memVal = cpu.ReadMemory(address)
 
     newVal = memVal << 1
@@ -122,7 +123,7 @@ def doBranch(cpu, instruction, flag, value):
     if flagVal is not value:
         return False
 
-    target = cpu.GetValue(cpu, 'PCREL')
+    target = cpu.GetValue(cpu, instruction)
     currPC = cpu.GetRegister('PC')
     cpu.SetPC(target)
    
@@ -144,7 +145,7 @@ def doBeq(cpu, instruction):
     return doBranch(cpu, instruction, 'Z', True)
 
 def doBit(cpu, instruction):
-    value = cpu.GetValue(instruction.operType)
+    value = cpu.GetValue(cpu, instruction)
     accuVal = cpu.GetRegister('A')
 
     cpu.SetFlag('N', (value & (1 << 7)) >> 7)
@@ -190,7 +191,7 @@ def doClv(cpu, instruction):
     return False
 
 def doCmp(cpu, instruction):
-    value = cpu.GetValue(instruction.operType)
+    value = cpu.GetValue(cpu, instruction)
     accuVal = cpu.GetRegister('A')
     
     newVal = accuVal - value
@@ -199,7 +200,7 @@ def doCmp(cpu, instruction):
     return False
 
 def doCpx(cpu, instruction):
-    value = cpu.GetValue(instruction.operType)
+    value = cpu.GetValue(cpu, instruction)
     xVal = cpu.GetRegister('X')
 
     newVal = xVal - value
@@ -208,7 +209,7 @@ def doCpx(cpu, instruction):
     return False
 
 def doCpy(cpu, instruction):
-    value = cpu.GetValue(instruction.operType)
+    value = cpu.GetValue(cpu, instruction)
     yVal = cpu.GetRegister('Y')
 
     newVal = yVal - value
@@ -217,7 +218,7 @@ def doCpy(cpu, instruction):
     return False
 
 def doDec(cpu, instruction):
-    addrVal = GetAddress(cpu, self.operType)
+    addrVal = GetAddress(cpu, instruction)
     memVal = cpu.ReadMemory(addrVal)
 
     newVal = memVal - 1
@@ -239,7 +240,7 @@ def doDey(cpu, instruction):
 
 def doEor(cpu, instruction):
     aVal = cpu.GetRegister('A')
-    value = cpu.GetValue(instruction.operType)
+    value = cpu.GetValue(cpu, instruction)
 
     newVal = aVal ^ value
     cpu.SetRegister('A', newVal)
@@ -329,12 +330,12 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xDE: Instruction('DEC', doDec, 'ABSX', 3, 7),
                 0xCA: Instruction('DEX', doDex, '', 1, 2),
                 0x88: Instruction('DEY', doDey, '', 1, 2),
-                0x49: Instruction('EOR', doEOR, 'IMM', 2, 2),
-                0x45: Instruction('EOR', doEOR, 'ZERO', 2, 3),
-                0x55: Instruction('EOR', doEOR, 'ZEROX', 2, 4),
-                0x4D: Instruction('EOR', doEOR, 'ABS', 3, 4),
-                0x5D: Instruction('EOR', doEOR, 'ABSX', 3, 4),
-                0x59: Instruction('EOR', doEOR, 'ABSY', 3, 4),
-                0x41: Instruction('EOR', doEOR, 'INDX', 2, 6),
-                0x51: Instruction('EOR', doEOR, 'INDY', 2, 5),
+                0x49: Instruction('EOR', doEor, 'IMM', 2, 2),
+                0x45: Instruction('EOR', doEor, 'ZERO', 2, 3),
+                0x55: Instruction('EOR', doEor, 'ZEROX', 2, 4),
+                0x4D: Instruction('EOR', doEor, 'ABS', 3, 4),
+                0x5D: Instruction('EOR', doEor, 'ABSX', 3, 4),
+                0x59: Instruction('EOR', doEor, 'ABSY', 3, 4),
+                0x41: Instruction('EOR', doEor, 'INDX', 2, 6),
+                0x51: Instruction('EOR', doEor, 'INDY', 2, 5),
                 }

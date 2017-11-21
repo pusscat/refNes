@@ -5,7 +5,7 @@ class Register(object):
         self.name = name
         self.value = 0
         self.past = [0] # maybe for rewind?
-        self.symbVal = [z3.BitVec(self.name, bitwidth)] # maybe for 
+        #self.symbVal = [z3.BitVec(self.name, bitwidth)] # maybe for 
                                                         # symbolic
                                                         # execution?
     def GetValue(self):
@@ -26,6 +26,7 @@ class Register(object):
 
 class CPU(object):
     def __init__(self, baseAddress=0x0000):
+        self.bitwidth = bitwidth = 8 # 1 byte - 8 bits
         self.regs = {  'A': Register('A', bitwidth),
                        'X': Register('X', bitwidth),
                        'Y': Register('Y', bitwidth),
@@ -33,11 +34,10 @@ class CPU(object):
                        'S': Register('S', bitwidth),
                        'P': Register('P', bitwidth)}
 
-        self.bitwidth = 8 # 1 byte - 8 bits
         self.pcSize = 2 # 2 bytes for PC - 16 bits
         self.memory = 0x10000 * [0x00]
         self.pastMemory = []
-        self.symbMemory = z3Array('mem', z3.BitVecSort(bitwidth), z3.BitVecSort(8))
+        #self.symbMemory = z3Array('mem', z3.BitVecSort(bitwidth), z3.BitVecSort(8))
 
         self.regs['PC'].SetValue(baseAddress)
 
@@ -53,7 +53,7 @@ class CPU(object):
         self.memory[address] = value & 0xFF
         return value
 
-    def GetRegister(name):
+    def GetRegister(self, name):
         return self.regs[name].GetValue()
 
     def SetPC(self, value):
@@ -100,14 +100,14 @@ class CPU(object):
 
         self.SetRegister('P', newFlag)
 
-    def CreateOverflowCondition(oldDst, oldSrc):
+    def CreateOverflowCondition(self, oldDst, oldSrc):
         op1 = (oldDst & 0x80) >> (self.bitwidth - 1)
         op2 = (oldSrc & 0x80) >> (self.bitwidth - 1)
         ofCond = (((op1 ^ op2) ^ 0x2) & (((op1 + op2) ^ op2) & 0x2)) != 0
 
         return ofCond
 
-    def CreatecarryCondition(oldDst, oldSrc, subOp):
+    def CreateCarryCondition(self, oldDst, oldSrc, subOp):
         if subOp:
             return ((~oldSrc + 1) & 0xFF > oldDst)
         else:
@@ -115,7 +115,7 @@ class CPU(object):
 
     def UpdateFlags(self, flags, oldDst, oldSrc, newVal, subOp):
         ofCond = self.CreateOverflowCondition(oldDst, oldSrc)
-        cfConf = self.CreateCarryCondition(oldDst, oldSrc, subOp)
+        cfCond = self.CreateCarryCondition(oldDst, oldSrc, subOp)
 
         validFlags = {  'C': cfCond == True,
                         'Z': newVal == 0,
@@ -131,21 +131,21 @@ class CPU(object):
                     'I':3,
                     'V':6,
                     'N':7}
-        flagsReg = self.GetFlag('P')
+        flagsReg = self.GetRegister('P')
         flagIndex = flags[flagName]
         return ((flagsReg & (1 << flagIndex)) != 0)
 
 
-    def incPC(size):
+    def incPC(self, size):
         currentPC = self.GetRegister('PC')
         self.SetRegister('PC', currentPC + size)
 
-    def incCycles(cycles):
+    def incCycles(self, cycles):
         self.cycle += cycles
 
     def step(self):
         opCode = self.ReadMemory(self.GetRegister('PC'))
-        instruction = self.instructions[opcode]
+        instruction = instructions.instructions[opCode]
         instruction.execute(self)
         self.cycle += instruction.cycles
 
