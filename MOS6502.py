@@ -53,6 +53,11 @@ class CPU(object):
         self.memory[address] = value & 0xFF
         return value
 
+    def initMemory(self, address, values): # write 1 at a time
+        for value in values:
+            self.SetMemory(address, value)
+            address = address + 1
+
     def GetRegister(self, name):
         return self.regs[name].GetValue()
 

@@ -15,15 +15,17 @@ import MOS6502
 class TestADC(unittest.TestCase):
     def testAcdImm(self):
         cpu = MOS6502.CPU()
-        instruction_bytes = (0x69, 0x41) # ADC 0x41
-        cpu.SetMemory(0, instruction_bytes[0])
-        cpu.SetMemory(1, instruction_bytes[1])
-        
+        instruction_bytes = [0x69, 0xA1] # ADC 0x41
+        #cpu.SetMemory(0, instruction_bytes[0])
+        #cpu.SetMemory(1, instruction_bytes[1])
+        cpu.initMemory(0, instruction_bytes)
+
         cpu.SetPC(0)
-        cpu.SetRegister('A', 0)
+        cpu.SetRegister('A', 0xA1)
         cpu.step()
 
-        self.assertEqual(cpu.GetRegister('A'), 0x41)
+        self.assertEqual(cpu.GetRegister('A'), 0x42)
+        self.assertEqual(cpu.GetFlag('C'), 1)
 
 if __name__ == '__main__':
     unittest.main()
