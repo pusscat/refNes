@@ -170,8 +170,24 @@ def doBrk(cpu, instruction):
 def doBvc(cpu, instruction):
     return doBranch(cpu, instruction, 'V', False)
 
-def doBvs(cpu, instruction:
+def doBvs(cpu, instruction):
     return doBranch(cpu, instruction, 'V', True)
+
+def doClc(cpu, instruction):
+    cpu.SetFlag('C', 0)
+    return False
+
+def doCld(cpu, instruction):
+    cpu.SetFlag('D', 0)
+    return False
+
+def doCli(cpu, instruction):
+    cpu.SetFlag('I', 0)
+    return False
+
+def doClv(cpu, instruction):
+    cpu.SetFlag('V', 0)
+    return False
 
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - Appendix A
 flags = {   'ADC': ['N', 'Z', 'C', 'V'],
@@ -187,6 +203,10 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'BRK': [],
             'BVC': [],
             'BVS': [],
+            'CLC': [],
+            'CLD': [],
+            'CLI': [],
+            'CLV': [],
         }
 
            # opcode : Instruction(mnem, function, size, cycles), 
@@ -222,4 +242,8 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x00: Instruction('BRK', doBrk, '', 1, 7),
                 0x50: Instruction('BVC', doBvc, 'PCREL', 2, 2),
                 0x70: Instruction('BVS', doBvs, 'PCREL', 2, 2),
+                0x18: Instruction('CLC', doClc, '', 1, 2),
+                0xD8: Instruction('CLD', doCld, '', 1, 2),
+                0x58: Instruction('CLI', doCli, '', 1, 2),
+                0xB8: Instruction('CLV', doClv, '', 1, 2),
                 }
