@@ -195,7 +195,7 @@ def doCmp(cpu, instruction):
     
     newVal = accuVal - value
     # Dont set a register in compare 
-    cpu.UpdateFlags(instruction.flags, accuVal, value, newVal, False, False)
+    cpu.UpdateFlags(instruction.flags, accuVal, value, newVal, False, True)
     return False
 
 def doCpx(cpu, instruction):
@@ -204,7 +204,7 @@ def doCpx(cpu, instruction):
 
     newVal = xVal - value
     # Dont set a register in compare 
-    cpu.UpdateFlags(instruction.flags, xVal, value, newVal, False, False)
+    cpu.UpdateFlags(instruction.flags, xVal, value, newVal, False, True)
     return False
 
 def doCpy(cpu, instruction):
@@ -213,9 +213,29 @@ def doCpy(cpu, instruction):
 
     newVal = yVal - value
     # Dont set a register in compare 
-    cpu.UpdateFlags(instruction.flags, yVal, value, newVal, False, False)
+    cpu.UpdateFlags(instruction.flags, yVal, value, newVal, False, True)
     return False
 
+def doDec(cpu, instruction):
+    addrVal = GetAddress(cpu, self.operType)
+    memVal = cpu.ReadMemory(addrVal)
+
+    newVal = memVal - 1
+    cpu.SetMemory(addrVal, newVal)
+    cpu.UpdateFlags(intruction.flags, memVal, memVal, newVal, False, True)
+    return False
+
+def doDex(cpu, instruction):
+    xVal = cpu.GetRegister('X')
+    cpu.SetRegister('X', xVal-1)
+    cpu.UpdateFlags(intruction.flags, xVal, xVal, xVal-1, False, True)
+    return False
+
+def doDey(cpu, instruction):
+    yVal = cpu.GetRegister('Y')
+    cpu.SetRegister('Y', yVal-1)
+    cpu.UpdateFlags(intruction.flags, yVal, yVal, yVal-1, False, True)
+    return False
 
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - Appendix A
 flags = {   'ADC': ['N', 'Z', 'C', 'V'],
@@ -238,6 +258,9 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'CMP': ['N', 'Z', 'C'],
             'CPX': ['N', 'Z', 'C'],
             'CPY': ['N', 'Z', 'C'],
+            'DEC': ['N', 'Z'],
+            'DEX': ['N', 'Z'],
+            'DEY': ['N', 'Z'],
         }
 
            # opcode : Instruction(mnem, function, operType, size, cycles) 
@@ -290,4 +313,10 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xC0: Instruction('CPY', doCpy, 'IMM', 2, 2),
                 0xC4: Instruction('CPY', doCpy, 'ZERO', 2, 3),
                 0xCC: Instruction('CPY', doCpy, 'ABS', 3, 4),
+                0xC6: Instruction('DEC', doDec, 'ZERO', 2, 5),
+                0xD6: Instruction('DEC', doDec, 'ZEROX', 2, 6),
+                0xCE: Instruction('DEC', doDec, 'ABS', 3, 3),
+                0xDE: Instruction('DEC', doDec, 'ABSX', 3, 7),
+                0xCA: Instruction('DEX', doDex, '', 1, 2),
+                0x88: Instruction('DEY', doDey, '', 1, 2),
                 }
