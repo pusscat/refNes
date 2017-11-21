@@ -67,8 +67,7 @@ class CPU(object):
         regS = self.GetRegister('S')
         stackAddr = 0x0100 + regS
         self.SetMemory(stackAddr, value)
-        regS -= 1
-        self.SetRegister('S', regS)
+        self.SetRegister('S', regS-1)
         return stackAddr
 
     def PushWord(self, value):
@@ -77,9 +76,10 @@ class CPU(object):
         
 
     def PopByte(self):
-        stackAddr = 0x0100 + self.GetRegister('S')
+        regS = self.GetRegister('S')
+        stackAddr = 0x0100 + regS
         value = self.ReadMemory(stackAddr)
-        self.SetRegister('S', stackAddr+1)
+        self.SetRegister('S', regS+1)
         return value
 
     def PopWord(self):
