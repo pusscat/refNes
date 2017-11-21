@@ -198,6 +198,25 @@ def doCmp(cpu, instruction):
     cpu.UpdateFlags(instruction.flags, accuVal, value, newVal, False, False)
     return False
 
+def doCpx(cpu, instruction):
+    value = cpu.GetValue(instruction.operType)
+    xVal = cpu.GetRegister('X')
+
+    newVal = xVal - value
+    # Dont set a register in compare 
+    cpu.UpdateFlags(instruction.flags, xVal, value, newVal, False, False)
+    return False
+
+def doCpy(cpu, instruction):
+    value = cpu.GetValue(instruction.operType)
+    yVal = cpu.GetRegister('Y')
+
+    newVal = yVal - value
+    # Dont set a register in compare 
+    cpu.UpdateFlags(instruction.flags, yVal, value, newVal, False, False)
+    return False
+
+
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - Appendix A
 flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'AND': ['N', 'Z'],
@@ -217,6 +236,8 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'CLI': [],
             'CLV': [],
             'CMP': ['N', 'Z', 'C'],
+            'CPX': ['N', 'Z', 'C'],
+            'CPY': ['N', 'Z', 'C'],
         }
 
            # opcode : Instruction(mnem, function, operType, size, cycles) 
@@ -263,4 +284,10 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xDD: Instruction('CMP', doCmp, 'ABSX', 3, 4),
                 0xC1: Instruction('CMP', doCmp, 'INDX', 2, 6),
                 0xD1: Instruction('CMP', doCmp, 'INDY', 2, 5),
+                0xE0: Instruction('CPX', doCpx, 'IMM', 2, 2),
+                0xE4: Instruction('CPX', doCpx, 'ZERO', 2, 3),
+                0xEC: Instruction('CPX', doCpx, 'ABS', 3, 4),
+                0xC0: Instruction('CPY', doCpy, 'IMM', 2, 2),
+                0xC4: Instruction('CPY', doCpy, 'ZERO', 2, 3),
+                0xCC: Instruction('CPY', doCpy, 'ABS', 3, 4),
                 }
