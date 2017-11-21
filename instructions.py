@@ -247,6 +247,27 @@ def doEor(cpu, instruction):
     cpu.UpdateFlags(intruction.flags, aVal, value, newVal, False)
     return False
 
+def doInc(cpu, instruction):
+    addrVal = GetAddress(cpu, instruction)
+    memVal = cpu.ReadMemory(addrVal)
+
+    newVal = memVal + 1
+    cpu.SetMemory(addrVal, newVal)
+    cpu.UpdateFlags(intruction.flags, memVal, memVal, newVal, False)
+    return False 
+
+def doInx(cpu, instruction):
+    xVal = cpu.GetRegister('X')
+    cpu.SetRegister('X', xVal+1)
+    cpu.UpdateFlags(intruction.flags, xVal, xVal, xVal+1, True)
+    return False
+
+def doIny(cpu, instruction):
+    yVal = cpu.GetRegister('Y')
+    cpu.SetRegister('Y', yVal+1)
+    cpu.UpdateFlags(intruction.flags, yVal, yVal, yVal+1, True)
+    return False
+
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - Appendix A
 flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'AND': ['N', 'Z'],
@@ -272,6 +293,9 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'DEX': ['N', 'Z'],
             'DEY': ['N', 'Z'],
             'EOR': ['N', 'Z'],
+            'INC': ['N', 'Z'],
+            'INX': ['N', 'Z'],
+            'INY': ['N', 'Z'],
         }
 
            # opcode : Instruction(mnem, function, operType, size, cycles) 
@@ -338,4 +362,10 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x59: Instruction('EOR', doEor, 'ABSY', 3, 4),
                 0x41: Instruction('EOR', doEor, 'INDX', 2, 6),
                 0x51: Instruction('EOR', doEor, 'INDY', 2, 5),
+                0xE6: Instruction('INC', doInc, 'ZERO', 2, 5),
+                0xF6: Instruction('INC', doInc, 'ZEROX', 2, 6),
+                0xEE: Instruction('INC', doInc, 'ABS', 3, 6),
+                0xFE: Instruction('INC', doInc, 'ABSX', 3, 7),
+                0xE8: Instruction('INX', doInc, '', 1, 2),
+                0xC8: Instruction('INY', doInc, '', 1, 2),
                 }
