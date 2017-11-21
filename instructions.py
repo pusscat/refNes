@@ -79,7 +79,7 @@ def doAdc(cpu, instruction):
     newVal = accuVal + value + carryVal
 
     cpu.SetRegister('A', newVal)
-    cpu.UpdateFlags(instruction.flags, accuVal, value, newVal, False, False)
+    cpu.UpdateFlags(instruction.flags, accuVal, value, newVal, False)
     return False
 
 def doAnd(cpu, instruction):
@@ -89,7 +89,7 @@ def doAnd(cpu, instruction):
     newVal = accuVal & immVal
 
     cpu.SetRegister('A', newVal)
-    cpu.UpdateFlags(instruction.flags, accuVal, value, newVal, False, False)
+    cpu.UpdateFlags(instruction.flags, accuVal, value, newVal, False)
     return False
 
 def doAsl(cpu, instruction):
@@ -101,7 +101,7 @@ def doAsl(cpu, instruction):
     if newVal > 0xFF:
         cpu.SetFlag('C')
     cpu.SetMemory(address, newVal)
-    cpu.UpdateFlags(intruction.flags, memVal, memVal, newVal, False, False)
+    cpu.UpdateFlags(intruction.flags, memVal, memVal, newVal, False)
     return False
 
 def doAslAccu(cpu, instruction):
@@ -113,7 +113,7 @@ def doAslAccu(cpu, instruction):
        cpu.SetFlag('C')
 
     cpu.SetRegister('A', newVal)
-    cpu.UpdateFlags(intruction.flags, accuVal, accuVal, newVal, False, False)
+    cpu.UpdateFlags(intruction.flags, accuVal, accuVal, newVal, False)
     return False
 
 
@@ -195,7 +195,7 @@ def doCmp(cpu, instruction):
     
     newVal = accuVal - value
     # Dont set a register in compare 
-    cpu.UpdateFlags(instruction.flags, accuVal, value, newVal, False, True)
+    cpu.UpdateFlags(instruction.flags, accuVal, value, newVal, True)
     return False
 
 def doCpx(cpu, instruction):
@@ -204,7 +204,7 @@ def doCpx(cpu, instruction):
 
     newVal = xVal - value
     # Dont set a register in compare 
-    cpu.UpdateFlags(instruction.flags, xVal, value, newVal, False, True)
+    cpu.UpdateFlags(instruction.flags, xVal, value, newVal, True)
     return False
 
 def doCpy(cpu, instruction):
@@ -213,7 +213,7 @@ def doCpy(cpu, instruction):
 
     newVal = yVal - value
     # Dont set a register in compare 
-    cpu.UpdateFlags(instruction.flags, yVal, value, newVal, False, True)
+    cpu.UpdateFlags(instruction.flags, yVal, value, newVal, True)
     return False
 
 def doDec(cpu, instruction):
@@ -222,19 +222,28 @@ def doDec(cpu, instruction):
 
     newVal = memVal - 1
     cpu.SetMemory(addrVal, newVal)
-    cpu.UpdateFlags(intruction.flags, memVal, memVal, newVal, False, True)
+    cpu.UpdateFlags(intruction.flags, memVal, memVal, newVal, True)
     return False
 
 def doDex(cpu, instruction):
     xVal = cpu.GetRegister('X')
     cpu.SetRegister('X', xVal-1)
-    cpu.UpdateFlags(intruction.flags, xVal, xVal, xVal-1, False, True)
+    cpu.UpdateFlags(intruction.flags, xVal, xVal, xVal-1, True)
     return False
 
 def doDey(cpu, instruction):
     yVal = cpu.GetRegister('Y')
     cpu.SetRegister('Y', yVal-1)
-    cpu.UpdateFlags(intruction.flags, yVal, yVal, yVal-1, False, True)
+    cpu.UpdateFlags(intruction.flags, yVal, yVal, yVal-1, True)
+    return False
+
+def doEor(cpu, instruction):
+    aVal = cpu.GetRegister('A')
+    value = cpu.GetValue(instruction.operType)
+
+    newVal = aVal ^ value
+    cpu.SetRegister('A', newVal)
+    cpu.UpdateFlags(intruction.flags, aVal, value, newVal, False)
     return False
 
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - Appendix A
@@ -261,6 +270,7 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'DEC': ['N', 'Z'],
             'DEX': ['N', 'Z'],
             'DEY': ['N', 'Z'],
+            'EOR': ['N', 'Z'],
         }
 
            # opcode : Instruction(mnem, function, operType, size, cycles) 
@@ -319,4 +329,12 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xDE: Instruction('DEC', doDec, 'ABSX', 3, 7),
                 0xCA: Instruction('DEX', doDex, '', 1, 2),
                 0x88: Instruction('DEY', doDey, '', 1, 2),
+                0x49: Instruction('EOR', doEOR, 'IMM', 2, 2),
+                0x45: Instruction('EOR', doEOR, 'ZERO', 2, 3),
+                0x55: Instruction('EOR', doEOR, 'ZEROX', 2, 4),
+                0x4D: Instruction('EOR', doEOR, 'ABS', 3, 4),
+                0x5D: Instruction('EOR', doEOR, 'ABSX', 3, 4),
+                0x59: Instruction('EOR', doEOR, 'ABSY', 3, 4),
+                0x41: Instruction('EOR', doEOR, 'INDX', 2, 6),
+                0x51: Instruction('EOR', doEOR, 'INDY', 2, 5),
                 }

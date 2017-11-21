@@ -113,7 +113,7 @@ class CPU(object):
         else:
             return ((oldSrc > 0) and (oldDst > (0xff - oldSrc)))
 
-    def UpdateFlags(self, flags, oldDst, oldSrc, newVal, carry, subOp):
+    def UpdateFlags(self, flags, oldDst, oldSrc, newVal, subOp):
         ofCond = self.CreateOverflowCondition(oldDst, oldSrc)
         cfConf = self.CreateCarryCondition(oldDst, oldSrc, subOp)
 
