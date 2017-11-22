@@ -289,7 +289,17 @@ def doJsr(cpu, instruction):
     cpu.SetPC(addr)
     return True # PC changed by this instruction
 
-# http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - Appendix A
+def doLda(cpu, instruction):
+    value = GetValue(cpu, instruction)
+    aVal = cpu.GetRegister('A')
+    cpu.SetRegister('A', value)
+    cpu.UpdateFlags(intruction.flags, aVal, value, value, False)
+    return False
+
+
+
+# http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - better clock info
+# http://www.6502.org/tutorials/6502opcodes.html - better descriptions
 flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'AND': ['N', 'Z'],
             'ASL': ['N', 'Z'], #set C manually
@@ -319,6 +329,7 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'INY': ['N', 'Z'],
             'JMP': [],
             'JSR': [],
+            'LDA': ['N', 'Z'],
         }
 
            # opcode : Instruction(mnem, function, operType, size, cycles) 
@@ -394,4 +405,13 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x4C: Instruction('JMP', doJmp, 'ABS', 3, 3),
                 0x4C: Instruction('JMP', doJmp, 'IND', 3, 3),
                 0x20: Instruction('JSR', doJsr, 'ABS', 3, 6),
+                0xA9: Instruction('LDA', doLda, 'IMM', 2, 2),
+                0xA5: Instruction('LDA', doLda, 'ZERO', 2, 3),
+                0xB5: Instruction('LDA', doLda, 'ZEROX', 2, 4),
+                0xAD: Instruction('LDA', doLda, 'ABS', 3, 4),
+                0xBD: Instruction('LDA', doLda, 'ABSX', 3, 4),
+                0xB9: Instruction('LDA', doLda, 'ABSY', 3, 4),
+                0xA1: Instruction('LDA', doLda, 'INDX', 2, 6),
+                0xB1: Instruction('LDA', doLda, 'INDY', 2, 5),
+                
                 }
