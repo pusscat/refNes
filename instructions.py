@@ -296,6 +296,19 @@ def doLda(cpu, instruction):
     cpu.UpdateFlags(intruction.flags, aVal, value, value, False)
     return False
 
+def doLdx(cpu, instruction):
+    value = GetValue(cpu, instruction)
+    xVal = cpu.GetRegister('X')
+    cpu.SetRegister('X', value)
+    cpu.UpdateFlags(intruction.flags, xVal, value, value, False)
+    return False
+
+def doLdy(cpu, instruction):
+    value = GetValue(cpu, instruction)
+    yVal = cpu.GetRegister('Y')
+    cpu.SetRegister('Y', value)
+    cpu.UpdateFlags(intruction.flags, yVal, value, value, False)
+    return False
 
 
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - better clock info
@@ -330,6 +343,8 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'JMP': [],
             'JSR': [],
             'LDA': ['N', 'Z'],
+            'LDX': ['N', 'Z'],
+            'LDY': ['N', 'Z'],
         }
 
            # opcode : Instruction(mnem, function, operType, size, cycles) 
@@ -413,5 +428,14 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xB9: Instruction('LDA', doLda, 'ABSY', 3, 4),
                 0xA1: Instruction('LDA', doLda, 'INDX', 2, 6),
                 0xB1: Instruction('LDA', doLda, 'INDY', 2, 5),
-                
+                0xA2: Instruction('LDX', doLdx, 'IMM', 2, 2),
+                0xA6: Instruction('LDX', doLdx, 'ZERO', 2, 3),
+                0xB6: Instruction('LDX', doLdx, 'ZEROY', 2, 4),
+                0xAE: Instruction('LDX', doLdx, 'ABS', 3, 4),
+                0xBE: Instruction('LDX', doLdx, 'ABSY', 3, 4),
+                0xA0: Instruction('LDY', doLdy, 'IMM', 2, 2),
+                0xA4: Instruction('LDY', doLdy, 'ZERO', 2, 3),
+                0xB4: Instruction('LDY', doLdy, 'ZEROX', 2, 4),
+                0xAC: Instruction('LDY', doLdy, 'ABS', 3, 4),
+                0xBC: Instruction('LDY', doLdy, 'ABSX', 3, 4),
                 }
