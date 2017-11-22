@@ -466,5 +466,5 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x56: Instruction('LSR', doLsr, 'ZEROX', 2, 6),
                 0x4E: Instruction('LSR', doLsr, 'ABS', 3, 6),
                 0x5E: Instruction('LSR', doLsr, 'ABSX', 3, 7),
-                0xEA: Instruciton('NOP', doNop, '', 1, 2),
+                0xEA: Instruction('NOP', doNop, '', 1, 2),
                 }

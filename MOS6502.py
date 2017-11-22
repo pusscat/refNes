@@ -25,7 +25,7 @@ class Register(object):
 
 
 class CPU(object):
-    def __init__(self, baseAddress=0x0000):
+    def __init__(self, baseAddress=0x0000, stackAddress=0x1FF):
         self.bitwidth = bitwidth = 8 # 1 byte - 8 bits
         self.regs = {  'A': Register('A', bitwidth),
                        'X': Register('X', bitwidth),
@@ -40,6 +40,7 @@ class CPU(object):
         #self.symbMemory = z3Array('mem', z3.BitVecSort(bitwidth), z3.BitVecSort(8))
 
         self.regs['PC'].SetValue(baseAddress)
+        self.regs['S'].SetValue(stackAddress)
 
         self.cycle = 0
 
