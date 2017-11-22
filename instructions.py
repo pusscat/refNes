@@ -310,12 +310,30 @@ def doLdy(cpu, instruction):
     cpu.UpdateFlags(intruction.flags, yVal, value, value, False)
     return False
 
+def doLsrAcc(cpu, instruction):
+    aVal = cpu.GetRegister('A')
+    newVal = aVal >> 1
+    cpu.SetRegister('A', newVal)
+    cBit = aVal & 1
+    cpu.SetFlag('C', cBit)
+    cpu.UpdateFlags(intruction.flags, aVal, aVal, newVal, True)
+    return False
+
+def doLsr(cpu, instruction):
+    address = GetAddress(cpu, instruction)
+    value = cpu.ReadMemory(address)
+    newVal = value >> 1
+    cpu.SetMemory(address, newVal)
+    cBit = value & 1
+    cpu.SetFlag('C', cBit)
+    cpu.UpdateFlags(intruction.flags, value, value, newVal, True)
+    return False
 
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - better clock info
 # http://www.6502.org/tutorials/6502opcodes.html - better descriptions
 flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'AND': ['N', 'Z'],
-            'ASL': ['N', 'Z'], #set C manually
+            'ASL': ['N', 'Z'], # set C manually
             'BCC': [],
             'BCS': [],
             'BEQ': [],
@@ -345,6 +363,7 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'LDA': ['N', 'Z'],
             'LDX': ['N', 'Z'],
             'LDY': ['N', 'Z'],
+            'LSR': ['Z'], # set C manually
         }
 
            # opcode : Instruction(mnem, function, operType, size, cycles) 
@@ -438,4 +457,9 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xB4: Instruction('LDY', doLdy, 'ZEROX', 2, 4),
                 0xAC: Instruction('LDY', doLdy, 'ABS', 3, 4),
                 0xBC: Instruction('LDY', doLdy, 'ABSX', 3, 4),
+                0x4A: Instruction('LSR', doLsrAcc, '', 1, 2),
+                0x46: Instruction('LSR', doLsr, 'ZERO', 2, 5),
+                0x56: Instruction('LSR', doLsr, 'ZEROX', 2, 6),
+                0x4E: Instruction('LSR', doLsr, 'ABS', 3, 6),
+                0x5E: Instruction('LSR', doLsr, 'ABSX', 3, 7),
                 }
