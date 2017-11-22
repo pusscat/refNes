@@ -30,13 +30,14 @@ def GetValue(cpu, instruction):
         return cpu.ReadRelPC(1)
     if operType is 'ZERO':
         return cpu.ReadMemory(cpu.ReadRelPC(1))
-    if operType is 'ZEROX' or operType is 'INDX':
-        return cpu.ReadMemory((cpu.ReadRelPC(1) + cpu.GetRegister('X')) & 0xFF)
+    if operType is 'ZEROX' or operType is 'INDX': 
+        # CANNOT CROSS PAGE BOUNDARY SO MASK READ ADDRESS
+        return cpu.ReadMemory(((cpu.ReadRelPC(1) + cpu.GetRegister('X') & 0xFF)) & 0xFF)
     if operType is 'ZEROY':
         return cpu.ReadMemory((cpu.ReadRelPC(1) + cpu.GetRegister('Y')) & 0xFF)
     if operType is 'ABS':
         return cpu.ReadMemory(cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1))
-    if operType is 'ABSX':
+    if operType is 'ABSX': # THIS CAN CROSS PAGE BOUNDARY
         lowOrder = cpu.ReadRelPC(1) + cpu.GetRegister('X')
         if lowOrder > 0xFF:
             instruction.addCycles(1)
@@ -53,7 +54,8 @@ def GetValue(cpu, instruction):
         highOrder = cpu.ReadMemory(cpu.ReadRelPC(1)+1) << 8
         lowOrder = cpu.ReadMemory(cpu.ReadRelPC(1)) + cpu.GetRegister('Y')
         if lowOrder > 0xFF:
-           instruction.addCycles(1)
+            instruction.addCycles(1)
+            # we should NOT add 1 to high order in this case.
         return cpu.ReadMemory(highOrder + lowOrder)
     if operType is 'PCREL':
         return cpu.ReadRelPC(1) + cpu.GetRegister('PC')
@@ -69,6 +71,14 @@ def GetAddress(cpu, instruction):
         return cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1)
     if operType is 'ABSX':
         return cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1) + cpu.GetRegister('X')
+    if operType is 'IND':
+        addr = cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1)
+        lowOrder = cpu.ReadMemory(addr)
+        if (addr & 0xFF) == 0xFF:
+            addr = addr & 0xFF00 # DO NOT WALK PAGE BOUNDARIES
+        highOrder = cpu.ReadMemory(addr+1) << 8
+        return  cpu.ReadMemory(highOrder + lowOrder)
+
     return address
 
 
@@ -268,6 +278,17 @@ def doIny(cpu, instruction):
     cpu.UpdateFlags(intruction.flags, yVal, yVal, yVal+1, True)
     return False
 
+def doJmp(cpu, instruction):
+    addr = GetAddress(cpu, instruction)
+    cpu.SetPC(addr)
+    return True # PC changed by this instruction
+
+def doJsr(cpu, instruction):
+    addr = GetAddress(cpu, instruction)
+    cpu.PushWord(cpu.GetRegister('PC') + instruction.size - 1)
+    cpu.SetPC(addr)
+    return True # PC changed by this instruction
+
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - Appendix A
 flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'AND': ['N', 'Z'],
@@ -296,6 +317,8 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'INC': ['N', 'Z'],
             'INX': ['N', 'Z'],
             'INY': ['N', 'Z'],
+            'JMP': [],
+            'JSR': [],
         }
 
            # opcode : Instruction(mnem, function, operType, size, cycles) 
@@ -368,4 +391,7 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xFE: Instruction('INC', doInc, 'ABSX', 3, 7),
                 0xE8: Instruction('INX', doInc, '', 1, 2),
                 0xC8: Instruction('INY', doInc, '', 1, 2),
+                0x4C: Instruction('JMP', doJmp, 'ABS', 3, 3),
+                0x4C: Instruction('JMP', doJmp, 'IND', 3, 3),
+                0x20: Instruction('JSR', doJsr, 'ABS', 3, 6),
                 }
