@@ -329,6 +329,9 @@ def doLsr(cpu, instruction):
     cpu.UpdateFlags(intruction.flags, value, value, newVal, True)
     return False
 
+def doNop(cpu, instruction):
+    return False
+
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - better clock info
 # http://www.6502.org/tutorials/6502opcodes.html - better descriptions
 flags = {   'ADC': ['N', 'Z', 'C', 'V'],
@@ -364,6 +367,7 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'LDX': ['N', 'Z'],
             'LDY': ['N', 'Z'],
             'LSR': ['Z'], # set C manually
+            'NOP': [],
         }
 
            # opcode : Instruction(mnem, function, operType, size, cycles) 
@@ -462,4 +466,5 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x56: Instruction('LSR', doLsr, 'ZEROX', 2, 6),
                 0x4E: Instruction('LSR', doLsr, 'ABS', 3, 6),
                 0x5E: Instruction('LSR', doLsr, 'ABSX', 3, 7),
+                0xEA: Instruciton('NOP', doNop, '', 1, 2),
                 }
