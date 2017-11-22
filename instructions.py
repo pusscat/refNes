@@ -332,6 +332,15 @@ def doLsr(cpu, instruction):
 def doNop(cpu, instruction):
     return False
 
+def doOra(cpu, instruction):
+    value = GetValue(cpu, instruction)
+    aVal = cpu.GetRegister('A')
+
+    newVal = aVal | value
+
+    cpu.UpdateFlags(intruction.flags, aVal, value, newVal, False)
+    return False
+
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - better clock info
 # http://www.6502.org/tutorials/6502opcodes.html - better descriptions
 flags = {   'ADC': ['N', 'Z', 'C', 'V'],
@@ -368,6 +377,7 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'LDY': ['N', 'Z'],
             'LSR': ['Z'], # set C manually
             'NOP': [],
+            'ORA': ['N', 'Z'],
         }
 
            # opcode : Instruction(mnem, function, operType, size, cycles) 
@@ -467,4 +477,12 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x4E: Instruction('LSR', doLsr, 'ABS', 3, 6),
                 0x5E: Instruction('LSR', doLsr, 'ABSX', 3, 7),
                 0xEA: Instruction('NOP', doNop, '', 1, 2),
+                0x09: Instruction('ORA', doOra, 'IMM', 2, 2),
+                0x05: Instruction('ORA', doOra, 'ZERO', 2, 3),
+                0x15: Instruction('ORA', doOra, 'ZEROX', 2, 4),
+                0x0D: Instruction('ORA', doOra, 'ABS', 3, 4),
+                0x1D: Instruction('ORA', doOra, 'ABSX', 3, 4),
+                0x19: Instruction('ORA', doOra, 'ABSY', 3, 4),
+                0x01: Instruction('ORA', doOra, 'INDX', 2, 6),
+                0x11: Instruction('ORA', doOra, 'INDY', 2, 5),
                 }
