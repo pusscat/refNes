@@ -12,7 +12,7 @@ class Register(object):
         return self.value
     
     def SetValue(self, value):
-        self.value = value & 0xFF
+        self.value = value
 
     def GetCurrentSymb(self):
         return self.symbVal[-1]
@@ -73,6 +73,7 @@ class CPU(object):
 
     def SetPC(self, value):
         self.regs['PC'].SetValue(value & 0xFFFF)
+        return value & 0xFFFF
 
     def SetRegister(self, name, value):
         self.regs[name].SetValue(value & 0xFF)
