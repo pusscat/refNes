@@ -342,6 +342,27 @@ def doOra(cpu, instruction):
     cpu.UpdateFlags(intruction.flags, aVal, value, newVal, False)
     return False
 
+def doPha(cpu, instruction):
+    aVal = cpu.GetRegister('A')
+    cpu.PushByte(aVal)
+    return False
+
+def doPhp(cpu, instruction):
+    srVal = cpu.GetRegister('P')
+    cpu.PushByte(srVal)
+    return False
+
+def doPla(cpu, instruction):
+    aVal = cpu.PopByte()
+    cpu.setRegister('A', aVal)
+    cpu.UpdateFlags(instruction.flags, aVal, aVal, aVal, False)
+    return False
+
+def doPlp(cpu, instruction):
+    srVal = cpu.PopByte()
+    cpu.setRegister('P', srVal)
+    return False
+
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - better clock info
 # http://www.6502.org/tutorials/6502opcodes.html - better descriptions
 # http://6502.org/tutorials/65c02opcodes.html#3 - additional instructions
@@ -380,6 +401,10 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'LSR': ['Z'], # set C manually
             'NOP': [],
             'ORA': ['N', 'Z'],
+            'PHA': [],
+            'PHP': [],
+            'PLA': ['N', 'Z'],
+            'PLP': [],
         }
 
            # opcode : Instruction(mnem, function, operType, size, cycles) 
@@ -487,4 +512,8 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x19: Instruction('ORA', doOra, 'ABSY', 3, 4),
                 0x01: Instruction('ORA', doOra, 'INDX', 2, 6),
                 0x11: Instruction('ORA', doOra, 'INDY', 2, 5),
+                0x48: Instruction('PHA', doPha, '', 1, 3),
+                0x08: Instruction('PHP', doPhp, '', 1, 3),
+                0x68: Instruction('PLA', doPla, '', 1, 4),
+                0x28: Instruction('PLP', doPlp, '', 1, 4),
                 }
