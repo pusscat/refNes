@@ -25,7 +25,7 @@ class Register(object):
 
 
 class CPU(object):
-    def __init__(self, baseAddress=0x0000, stackAddress=0x1FF):
+    def __init__(self, baseAddress=0x8000):
         self.bitwidth = bitwidth = 8 # 1 byte - 8 bits
         self.regs = {  'A': Register('A', bitwidth),
                        'X': Register('X', bitwidth),
@@ -40,9 +40,18 @@ class CPU(object):
         #self.symbMemory = z3Array('mem', z3.BitVecSort(bitwidth), z3.BitVecSort(8))
 
         self.regs['PC'].SetValue(baseAddress)
-        self.regs['S'].SetValue(stackAddress)
+        self.regs['S'].SetValue(0xFF)
 
         self.cycle = 0
+
+        self.stackBase  = 0x0100
+        self.ppuMem     = 0x2000
+        self.apuMem     = 0x4000
+        self.programRom = 0x8000
+        self.nmi        = 0xFFFA
+        self.reset      = 0xFFFC
+        self.irqBrk     = 0xFFFE
+
 
     def ReadMemory(self, address): # always read 1 byte
         return self.memory[address]
@@ -70,11 +79,10 @@ class CPU(object):
         return value & 0xFF
 
     def PushByte(self, value):
-        regS = self.GetRegister('S')
-        stackAddr = 0x0100 + regS
-        self.SetMemory(stackAddr, value)
-        self.SetRegister('S', regS-1)
-        return stackAddr
+        regS = self.GetRegister('S') - 1
+        self.SetMemory(regS + self.stackBase, value)
+        self.SetRegister('S', regS)
+        return regS + self.stackBase
 
     def PushWord(self, value):
         self.PushByte((value & 0xFF00) >> 8)
@@ -83,8 +91,7 @@ class CPU(object):
 
     def PopByte(self):
         regS = self.GetRegister('S')
-        stackAddr = 0x0100 + regS
-        value = self.ReadMemory(stackAddr)
+        value = self.ReadMemory(regS + self.stackBase)
         self.SetRegister('S', regS+1)
         return value
 
@@ -144,7 +151,7 @@ class CPU(object):
 
     def incPC(self, size):
         currentPC = self.GetRegister('PC')
-        self.SetRegister('PC', currentPC + size)
+        self.SetPC(currentPC + size)
 
     def incCycles(self, cycles):
         self.cycle += cycles

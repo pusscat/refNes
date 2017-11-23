@@ -13,10 +13,10 @@ import instructions
 import MOS6502
 
 class TestADC(unittest.TestCase):
-    def testAcdImm(self):
+    def testAdcImm(self):
         cpu = MOS6502.CPU()
         instruction_bytes = [0x69, 0xA1] # ADC 0x41
-        cpu.initMemory(0, instruction_bytes)
+        cpu.initMemory(cpu.programRom, instruction_bytes)
 
         cpu.SetRegister('A', 0xA1)
         cpu.step()

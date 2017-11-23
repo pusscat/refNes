@@ -173,9 +173,10 @@ def doBpl(cpu, instruction):
     return doBranch(cpu, instruction, 'N', False)
 
 def doBrk(cpu, instruction):
-    cpu.SetFlag('B', 1)
+    cpu.SetFlag('I', 1)
     cpu.PushWord(cpu.GetRegister('PC')+2)
     cpu.PushByte(cpu.GetRegister('S'))
+    # jmp to irqBrk vector
     return False
 
 def doBvc(cpu, instruction):
@@ -343,6 +344,7 @@ def doOra(cpu, instruction):
 
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - better clock info
 # http://www.6502.org/tutorials/6502opcodes.html - better descriptions
+# http://6502.org/tutorials/65c02opcodes.html#3 - additional instructions
 flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'AND': ['N', 'Z'],
             'ASL': ['N', 'Z'], # set C manually
