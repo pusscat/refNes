@@ -384,6 +384,27 @@ def doRol(cpu, instruction):
     cpu.UpdateFlags(instruction.flags, value, value, newVal, False)
     return False
 
+def doRorAcc(cpu, instruction):
+    value = cpu.GetRegister('A')
+    oldC = cpu.GetFlag('C')
+    newC = 1 if (value & 0x1) else 0
+    newVal = (value >> 1 ) + (oldC * 0x80)
+    cpu.SetRegister('A', newVal)
+    cpu.SetFlag('C', newC)
+    cpu.UpdateFlags(instruction.flags, value, value, newVal, False)
+    return False
+
+def doRor(cpu, instruction):
+    addr = GetAddress(cpu, instruction)
+    value = cpu.ReadMemory(addr)
+    oldC = cpu.GetFlag('C')
+    newC = 1 if (value & 0x1) else 0
+    newVal = (value >> 1 ) + (oldC * 0x80)
+    cpu.SetMemory(addr, newVal)
+    cpu.SetFlag('C', newC)
+    cpu.UpdateFlags(instruction.flags, value, value, newVal, False)
+    return False
+
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - better clock info
 # http://www.6502.org/tutorials/6502opcodes.html - better descriptions
 # http://6502.org/tutorials/65c02opcodes.html#3 - additional instructions
@@ -426,7 +447,8 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'PHP': [],
             'PLA': ['N', 'Z'],
             'PLP': [],
-            'ROL': ['N', 'Z', 'C'],
+            'ROL': ['N', 'Z'], # manual C
+            'ROR': ['N', 'Z'], # manual C
         }
 
            # opcode : Instruction(mnem, function, operType, size, cycles) 
@@ -543,4 +565,9 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x36: Instruction('ROL', doRol, 'ZEROX', 2, 6),
                 0x2E: Instruction('ROL', doRol, 'ABS', 3, 6),
                 0x3E: Instruction('ROL', doRol, 'ABSX', 3, 7),
+                0x6A: Instruction('ROR', doRorAcc, '', 1, 2),
+                0x66: Instruction('ROR', doRor, 'ZERO', 2, 5),
+                0x76: Instruction('ROR', doRor, 'ZEROX', 2, 6),
+                0x6E: Instruction('ROR', doRor, 'ABS', 3, 6),
+                0x7E: Instruction('ROR', doRor, 'ABSX', 3, 7),   
                 }
