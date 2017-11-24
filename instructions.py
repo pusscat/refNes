@@ -488,6 +488,20 @@ def doTxa(cpu, instruction):
     cpu.UpdateFlags(instruction.flags, xVal, xVal, xVal, False)
     return False
 
+def doTxs(cpu, instruction):
+    xVal = cpu.GetRegister('X')
+    cpu.SetRegister('S', xVal)
+
+    cpu.UpdateFlags(instruction.flags, xVal, xVal, xVal, False)
+    return False
+
+def doTya(cpu, instruction):
+    yVal = cpu.GetRegister('Y')
+    cpu.SetRegister('A', xVal)
+
+    cpu.UpdateFlags(instruction.flags, yVal, yVal, yVal, False)
+    return False
+
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - better clock info
 # http://www.6502.org/tutorials/6502opcodes.html - better descriptions
 # http://6502.org/tutorials/65c02opcodes.html#3 - additional instructions
@@ -545,6 +559,8 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'TAY': ['N', 'Z'],
             'TSX': ['N', 'Z'],
             'TXA': ['N', 'Z'],
+            'TXS': ['N', 'Z'],
+            'TYA': ['N', 'Z'],
         }
 
            # opcode : Instruction(mnem, function, operType, size, cycles) 
@@ -696,4 +712,6 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xA8: Instruction('TAY', doTay, '', 1, 2),
                 0xBA: Instruction('TSX', doTsx, '', 1, 2),
                 0x8A: Instruction('TXA', doTxa, '', 1, 2),
+                0x9A: Instruction('TXS', doTxs, '', 1, 2),
+                0x98: Instruction('TYA', doTya, '', 1, 2),
                 }
