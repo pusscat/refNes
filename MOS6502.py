@@ -1,4 +1,5 @@
 import instructions
+from nesMemory import Memory
 
 class Register(object):
     def __init__(self, name, bitwidth):
@@ -35,7 +36,7 @@ class CPU(object):
                        'P': Register('P', bitwidth)}
 
         self.pcSize = 2 # 2 bytes for PC - 16 bits
-        self.memory = 0x10000 * [0x00]
+        self.memory = Memory()
         self.pastMemory = []
         #self.symbMemory = z3Array('mem', z3.BitVecSort(bitwidth), z3.BitVecSort(8))
 
@@ -54,19 +55,19 @@ class CPU(object):
 
 
     def ReadMemory(self, address): # always read 1 byte
-        return self.memory[address]
+        return self.memory.ReadMemory(address)
 
     def ReadMemWord(self, address):
-        value = self.ReadMemory(address) + 
-                self.ReadMemory(address+1) << 8
+        value  = self.ReadMemory(address)
+        value += self.ReadMemory(address + 1) << 8 
         return value
 
     def ReadRelPC(self, offset):
-        return self.memory[self.GetRegister('PC')+offset]
+        return self.memory.ReadMemory(self.GetRegister('PC')+offset)
 
     def SetMemory(self, address, value): # always write 1 byte
-        self.memory[address] = value & 0xFF
-        return value
+        #self.memory[address] = value & 0xFF
+        return self.memory.SetMemory(address, value)
 
     def initMemory(self, address, values): # write 1 at a time
         for value in values:
