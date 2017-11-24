@@ -427,6 +427,67 @@ def doSbc(cpu, instruction):
     cpu.UpdateFlags(instruction.flags, aVal, value, newVal, True)
     return False
 
+def doSec(cpu, instruction):
+    cpu.SetFlag('C')
+    return False
+
+def doSed(cpu, instruction):
+    cpu.SetFlag('D')
+    return False
+
+def doSei(cpu, instruction):
+    cpu.SetFlag('I')
+    return False
+
+def doSta(cpu, instruction):
+    aVal = cpu.GetRegister('A')
+    addr = GetAddress(cpu, instruction)
+
+    cpu.SetMemory(addr, aVal)
+    return False
+
+def doStx(cpu, instruction):
+    xVal = cpu.GetRegister('X')
+    addr = GetAddress(cpu, instruction)
+
+    cpu.SetMemory(addr, xVal)
+    return False
+
+def doSty(cpu, instruction):
+    yVal = cpu.GetRegister('Y')
+    addr = GetAddress(cpu, instruction)
+
+    cpu.SetMemory(addr, yVal)
+    return False
+
+def doTax(cpu, instruction):
+    aVal = cpu.GetRegister('A')
+    cpu.SetRegister('X', aVal)
+
+    cpu.UpdateFlags(instruction.flags, aVal, aVal, aVal, False)
+    return False
+
+def doTay(cpu, instruction):
+    aVal = cpu.GetRegister('A')
+    cpu.SetRegister('Y', aVal)
+
+    cpu.UpdateFlags(instruction.flags, aVal, aVal, aVal, False)
+    return False
+
+def doTsx(cpu, instruction):
+    sVal = cpu.GetRegister('S')
+    cpu.SetRegister('X', sVal)
+
+    cpu.UpdateFlags(instruction.flags, sVal, sVal, sVal, False)
+    return False
+
+def doTxa(cpu, instruction):
+    xVal = cpu.GetRegister('X')
+    cpu.SetRegister('A', xVal)
+
+    cpu.UpdateFlags(instruction.flags, xVal, xVal, xVal, False)
+    return False
+
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - better clock info
 # http://www.6502.org/tutorials/6502opcodes.html - better descriptions
 # http://6502.org/tutorials/65c02opcodes.html#3 - additional instructions
@@ -474,6 +535,16 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'RTI': [],
             'RTS': [],
             'SBC': ['N', 'C', 'Z', 'V'],
+            'SEC': [],
+            'SED': [],
+            'SEI': [],
+            'STA': [],
+            'STX': [],
+            'STY': [],
+            'TAX': ['N', 'Z'],
+            'TAY': ['N', 'Z'],
+            'TSX': ['N', 'Z'],
+            'TXA': ['N', 'Z'],
         }
 
            # opcode : Instruction(mnem, function, operType, size, cycles) 
@@ -598,12 +669,31 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x40: Instruction('RTI', doRti, '', 1, 6),
                 0x60: Instruction('RTS', doRts, '', 1, 6),
                 0xE9: Instruction('SBC', doSbc, 'IMM', 2, 2),
-                0xE9: Instruction('SBC', doSbc, 'ZERO', 2, 3),
-                0xE9: Instruction('SBC', doSbc, 'ZEROX', 2, 4),
-                0xE9: Instruction('SBC', doSbc, 'ABS', 3, 4),
-                0xE9: Instruction('SBC', doSbc, 'ABSX', 3, 4),
-                0xE9: Instruction('SBC', doSbc, 'ABSY', 3, 4),
-                0xE9: Instruction('SBC', doSbc, 'INDX', 2, 6),
-                0xE9: Instruction('SBC', doSbc, 'INDY', 2, 5),
-                
+                0xE5: Instruction('SBC', doSbc, 'ZERO', 2, 3),
+                0xF5: Instruction('SBC', doSbc, 'ZEROX', 2, 4),
+                0xED: Instruction('SBC', doSbc, 'ABS', 3, 4),
+                0xFD: Instruction('SBC', doSbc, 'ABSX', 3, 4),
+                0xF9: Instruction('SBC', doSbc, 'ABSY', 3, 4),
+                0xE1: Instruction('SBC', doSbc, 'INDX', 2, 6),
+                0xF1: Instruction('SBC', doSbc, 'INDY', 2, 5),
+                0x38: Instruction('SEC', doSec, '', 1, 2),
+                0xF8: Instruction('SED', doSed, '', 1, 2),
+                0x78: Instruction('SEI', doSei, '', 1, 2),
+                0x85: Instruction('STA', doSta, 'ZERO', 2, 3),
+                0x95: Instruction('STA', doSta, 'ZEROX', 2, 4),
+                0x8D: Instruction('STA', doSta, 'ABS', 3, 4),
+                0x9D: Instruction('STA', doSta, 'ABSX', 3, 5),
+                0x99: Instruction('STA', doSta, 'ABSY', 3, 5),
+                0x81: Instruction('STA', doSta, 'INDX', 2, 6),
+                0x91: Instruction('STA', doSta, 'INDY', 2, 6),
+                0x86: Instruction('STX', doStx, 'ZERO', 2, 3),
+                0x96: Instruction('STX', doStx, 'ZEROY', 2, 4),
+                0x8E: Instruction('STX', doStx, 'ABS', 3, 4),
+                0x84: Instruction('STY', doSty, 'ZERO', 2, 3),
+                0x94: Instruction('STY', doSty, 'ZEROX', 2, 4),
+                0x8C: Instruction('STY', doSty, 'ABS', 3, 4),
+                0xAA: Instruction('TAX', doTax, '', 1, 2),
+                0xA8: Instruction('TAY', doTay, '', 1, 2),
+                0xBA: Instruction('TSX', doTsx, '', 1, 2),
+                0x8A: Instruction('TXA', doTxa, '', 1, 2),
                 }
