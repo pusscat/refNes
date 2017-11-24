@@ -407,10 +407,16 @@ def doRor(cpu, instruction):
     cpu.UpdateFlags(instruction.flags, value, value, newVal, False)
     return False
 
-def doRti(cpu, instruction)
+def doRti(cpu, instruction):
     cpu.SetRegister('P', cpu.PopByte())
     cpu.SetPC(cpu.PopWord())
     return True
+
+def doRts(cpu, instruction):
+    cpu.SetPC(cpu.PopWord())
+    return True
+
+
 
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - better clock info
 # http://www.6502.org/tutorials/6502opcodes.html - better descriptions
@@ -457,6 +463,7 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'ROL': ['N', 'Z'], # manual C
             'ROR': ['N', 'Z'], # manual C
             'RTI': [],
+            'RTS': [],
         }
 
            # opcode : Instruction(mnem, function, operType, size, cycles) 
@@ -579,4 +586,6 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x6E: Instruction('ROR', doRor, 'ABS', 3, 6),
                 0x7E: Instruction('ROR', doRor, 'ABSX', 3, 7),   
                 0x40: Instruction('RTI', doRti, '', 1, 6),
+                0x60: Instruction('RTS', doRts, '', 1, 6),
+                
                 }
