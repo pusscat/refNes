@@ -416,7 +416,16 @@ def doRts(cpu, instruction):
     cpu.SetPC(cpu.PopWord())
     return True
 
+def doSbc(cpu, instruction):
+    aVal = cpu.GetRegister('A')
+    value = GetValue(cpu, instruction)
+    cVal = cpu.GetFlag('C')
 
+    newVal = aVal - value - cVal
+
+    cpu.SetRegiser('A', newVal)
+    cpu.UpdateFlags(instruction.flags, aVal, value, newVal, True)
+    return False
 
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - better clock info
 # http://www.6502.org/tutorials/6502opcodes.html - better descriptions
@@ -464,6 +473,7 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'ROR': ['N', 'Z'], # manual C
             'RTI': [],
             'RTS': [],
+            'SBC': ['N', 'C', 'Z', 'V'],
         }
 
            # opcode : Instruction(mnem, function, operType, size, cycles) 
@@ -587,5 +597,13 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x7E: Instruction('ROR', doRor, 'ABSX', 3, 7),   
                 0x40: Instruction('RTI', doRti, '', 1, 6),
                 0x60: Instruction('RTS', doRts, '', 1, 6),
+                0xE9: Instruction('SBC', doSbc, 'IMM', 2, 2),
+                0xE9: Instruction('SBC', doSbc, 'ZERO', 2, 3),
+                0xE9: Instruction('SBC', doSbc, 'ZEROX', 2, 4),
+                0xE9: Instruction('SBC', doSbc, 'ABS', 3, 4),
+                0xE9: Instruction('SBC', doSbc, 'ABSX', 3, 4),
+                0xE9: Instruction('SBC', doSbc, 'ABSY', 3, 4),
+                0xE9: Instruction('SBC', doSbc, 'INDX', 2, 6),
+                0xE9: Instruction('SBC', doSbc, 'INDY', 2, 5),
                 
                 }
