@@ -56,6 +56,11 @@ class CPU(object):
     def ReadMemory(self, address): # always read 1 byte
         return self.memory[address]
 
+    def ReadMemWord(self, address):
+        value = self.ReadMemory(address) + 
+                self.ReadMemory(address+1) << 8
+        return value
+
     def ReadRelPC(self, offset):
         return self.memory[self.GetRegister('PC')+offset]
 

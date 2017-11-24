@@ -173,11 +173,14 @@ def doBpl(cpu, instruction):
     return doBranch(cpu, instruction, 'N', False)
 
 def doBrk(cpu, instruction):
-    cpu.SetFlag('I', 1)
     cpu.PushWord(cpu.GetRegister('PC')+2)
     cpu.PushByte(cpu.GetRegister('S'))
+    cpu.SetFlag('I', 1)
+    
     # jmp to irqBrk vector
-    return False
+    target = ReadMemWord(cpu.irqBrk)
+    cpu.SetPC(target)
+    return True
 
 def doBvc(cpu, instruction):
     return doBranch(cpu, instruction, 'V', False)
@@ -359,8 +362,7 @@ def doPla(cpu, instruction):
     return False
 
 def doPlp(cpu, instruction):
-    srVal = cpu.PopByte()
-    cpu.setRegister('P', srVal)
+    cpu.setRegister('P', cpu.PopByte())
     return False
 
 def doRolAcc(cpu, instruction):
@@ -404,6 +406,11 @@ def doRor(cpu, instruction):
     cpu.SetFlag('C', newC)
     cpu.UpdateFlags(instruction.flags, value, value, newVal, False)
     return False
+
+def doRti(cpu, instruction)
+    cpu.SetRegister('P', cpu.PopByte())
+    cpu.SetPC(cpu.PopWord())
+    return True
 
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - better clock info
 # http://www.6502.org/tutorials/6502opcodes.html - better descriptions
@@ -449,6 +456,7 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'PLP': [],
             'ROL': ['N', 'Z'], # manual C
             'ROR': ['N', 'Z'], # manual C
+            'RTI': [],
         }
 
            # opcode : Instruction(mnem, function, operType, size, cycles) 
@@ -570,4 +578,5 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x76: Instruction('ROR', doRor, 'ZEROX', 2, 6),
                 0x6E: Instruction('ROR', doRor, 'ABS', 3, 6),
                 0x7E: Instruction('ROR', doRor, 'ABSX', 3, 7),   
+                0x40: Instruction('RTI', doRti, '', 1, 6),
                 }
