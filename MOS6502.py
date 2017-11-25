@@ -1,5 +1,6 @@
 import instructions
 from nesMemory import Memory
+from nesCart import Rom
 
 class Register(object):
     def __init__(self, name, bitwidth):
@@ -53,6 +54,11 @@ class CPU(object):
         self.reset      = 0xFFFC
         self.irqBrk     = 0xFFFE
 
+        self.rom = None
+
+    def loadRom(self, romPath):
+        self.rom = Rom(romPath, self)
+        return self.rom
 
     def ReadMemory(self, address): # always read 1 byte
         return self.memory.ReadMemory(address)
