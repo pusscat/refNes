@@ -1,3 +1,4 @@
+import struct
 
 class Memory(object):
     def __init__(self):
@@ -29,7 +30,7 @@ class Memory(object):
 
     def ReadMemory(self, cpu, address):
         (mem, addr) = self.AddressTranslation(cpu, address)
-        return mem[addr]
+        return struct.unpack('B', mem[addr])[0]
 
     def SetMemory(self, cpu, address, value):
         (mem, addr) = self.AddressTranslation(cpu, address)

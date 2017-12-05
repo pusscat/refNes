@@ -12,15 +12,12 @@ def disasm(memory):
         line += currInst.operType + " "
         if currInst.size > 1:
             if 'ABS' in currInst.operType:
-                line += hex(memory[i] + (memory[i+1] << 8))
+                line += hex(memory[index+1] + (memory[index+2] << 8))
             else:    
                 for i in range(1, currInst.size):
-                    line += hex(memory[i]) + " "
+                    line += hex(memory[index + i]) + " "
 
         lines.append(line)
         index += currInst.size
 
     return lines
-
-code = [0x78, 0xD8, 0xA9, 0x10, 0x8D, 0x00, 0x20, 0xA2]
-print disasm(code)

@@ -10,6 +10,8 @@ code_path = os.path.join(code_path, os.pardir)
 sys.path.append(code_path)
 
 import MOS6502
+import instructions
+from disasm import disasm
 
 class TestCartHeaderParsing(unittest.TestCase):
     def testMagic(self):
@@ -27,6 +29,21 @@ class TestCartHeaderParsing(unittest.TestCase):
         firstByte = cpu.ReadMemory(startAddr)
         self.assertEqual(firstByte, 0x78)
 
+    def testDisasmRomBank(self):
+        cpu = MOS6502.CPU()
+        cpu.loadRom("../smb1.nes")
+
+        address = cpu.ReadMemWord(cpu.reset)
+        code = []
+        for i in range(0, 18):
+            code.append(cpu.ReadMemory(address))
+            address += 1
+
+        disassembly = disasm(code)
+        for line in disassembly:
+            print line
+
+        self.assertEqual(len(disassembly) == 9, True)
 
 if __name__ == '__main__':
     unittest.main()
