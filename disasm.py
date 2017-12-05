@@ -11,8 +11,11 @@ def disasm(memory):
         line = currInst.mnem + " "
         line += currInst.operType + " "
         if currInst.size > 1:
-            for i in range(1, currInst.size):
-                line += hex(memory[i]) + " "
+            if 'ABS' in currInst.operType:
+                line += hex(memory[i] + (memory[i+1] << 8))
+            else:    
+                for i in range(1, currInst.size):
+                    line += hex(memory[i]) + " "
 
         lines.append(line)
         index += currInst.size
