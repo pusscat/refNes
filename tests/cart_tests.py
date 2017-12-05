@@ -23,6 +23,9 @@ class TestCartHeaderParsing(unittest.TestCase):
         self.assertEqual(cpu.rom.numRomBanks, 2)
         self.assertEqual(cpu.rom.numVromBanks, 1)
 
+        startAddr = cpu.ReadMemWord(cpu.reset)
+        firstByte = cpu.ReadMemory(startAddr)
+        self.assertEqual(firstByte, 0x78)
 
 
 if __name__ == '__main__':
