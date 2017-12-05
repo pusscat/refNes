@@ -56,12 +56,16 @@ class CPU(object):
 
         self.rom = None
 
+    def mapMem(self, address):
+        return self.rom.mapMem(self, address)
+
+
     def loadRom(self, romPath):
         self.rom = Rom(romPath, self)
         return self.rom
 
     def ReadMemory(self, address): # always read 1 byte
-        return self.memory.ReadMemory(address)
+        return self.memory.ReadMemory(self, address)
 
     def ReadMemWord(self, address):
         value  = self.ReadMemory(address)
@@ -73,7 +77,7 @@ class CPU(object):
 
     def SetMemory(self, address, value): # always write 1 byte
         #self.memory[address] = value & 0xFF
-        return self.memory.SetMemory(address, value)
+        return self.memory.SetMemory(self, address, value)
 
     def initMemory(self, address, values): # write 1 at a time
         for value in values:

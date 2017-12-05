@@ -23,5 +23,7 @@ class TestCartHeaderParsing(unittest.TestCase):
         self.assertEqual(cpu.rom.numRomBanks, 2)
         self.assertEqual(cpu.rom.numVromBanks, 1)
 
+
+
 if __name__ == '__main__':
     unittest.main()

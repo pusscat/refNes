@@ -3,9 +3,10 @@ class Memory(object):
     def __init__(self):
         # some of this isnt used due to mirroring
         # some of this changes due to mappers
-        self.memory = 0x10000 * [0]
+        pass
 
-    def AddressTranslation(self, address):
+    def AddressTranslation(self, cpu, address):
+        retMem = None
         # handle basic mirroring here
         if address > 0x7FF and address < 0x2000:
             address &= 0x7FF
@@ -16,7 +17,9 @@ class Memory(object):
        
         # handle nametable mirroring here - XXX
 
-        # handle all other mapper specific mirroring - XXX
+        # handle all other mapper specific stuff
+        if address > 0x5FFF:
+            return cpu.mapMem(address)
         
         # pass back both memory block and address so mappers 
         # dont have to copy to base memory, and can pass their 
@@ -24,11 +27,11 @@ class Memory(object):
         return (self.memory, address)
 
 
-    def ReadMemory(self, address):
-        (mem, addr) = self.AddressTranslation(address)
+    def ReadMemory(self, cpu, address):
+        (mem, addr) = self.AddressTranslation(cpu, address)
         return mem[addr]
 
-    def SetMemory(self, address, value):
-        (mem, addr) = self.AddressTranslation(address)
+    def SetMemory(self, cpu, address, value):
+        (mem, addr) = self.AddressTranslation(cpu, address)
         mem[addr] = value & 0xFF
         return value & 0xFF

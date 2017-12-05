@@ -1,6 +1,14 @@
 # http://fms.komkon.org/EMUL8/NES.html#LABM
 
+import sys
+import os
+
+code_path = os.path.dirname(__file__)
+code_path = os.path.join(code_path, "nesMappers")
+sys.path.append(code_path)
+
 import struct
+import mapper
 
 class Rom(object):
     def __init__(self, romPath, cpu):
@@ -29,11 +37,14 @@ class Rom(object):
         self.battRam = flags6 & 2
         self.trainer = flags6 & 4
         self.fourScreen = flags6 & 8
-        self.lowMapper = flags6 >> 4
+        lowMapper = flags6 >> 4
 
         # byte 7 flags
         self.vsSystem = flags7 & 1
-        self.hiMapper = flags7 >> 4
+        hiMapper = flags7 >> 4
+
+        self.mapperNum = hiMapper << 4 + lowMapper
+        self.mapper = mapper.Mapper(cpu, self.mapperNum)
 
         # byte 8 - num 8kB RAM banks
         self.numRamBanks = flags8 if flags8 != 0 else 1
@@ -55,3 +66,6 @@ class Rom(object):
         for i in range(0, self.numVromBanks):
             self.vromBanks.append(romData[index:index+vromBankSize])
             index += vromBankSize
+
+    def mapMem(self, cpu, address):
+        return self.mapper.mapMem(self, cpu, address)
