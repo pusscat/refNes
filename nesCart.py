@@ -44,7 +44,6 @@ class Rom(object):
         hiMapper = flags7 >> 4
 
         self.mapperNum = hiMapper << 4 + lowMapper
-        self.mapper = mapper.Mapper(cpu, self.mapperNum)
 
         # byte 8 - num 8kB RAM banks
         self.numRamBanks = flags8 if flags8 != 0 else 1
@@ -67,5 +66,8 @@ class Rom(object):
             self.vromBanks.append(romData[index:index+vromBankSize])
             index += vromBankSize
 
+        # do this last so romBanks already exist ;)
+        self.mapper = mapper.Mapper(cpu, self, self.mapperNum)
+    
     def mapMem(self, cpu, address):
-        return self.mapper.mapMem(self, cpu, address)
+        return self.mapper.mapMem(cpu, address)
