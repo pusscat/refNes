@@ -60,7 +60,7 @@ class CPU(object):
         return self.rom.mapMem(self, address)
 
 
-    def loadRom(self, romPath):
+    def LoadRom(self, romPath):
         self.rom = Rom(romPath, self)
         return self.rom
 
@@ -118,7 +118,9 @@ class CPU(object):
     def SetFlag(self, flagName, value):
         flags = {   'C':0,  # Carry
                     'Z':1,  # Zero
-                    'I':3,  # Interrupt mask
+                    'I':2,  # Interrupt mask
+                    'D':3,  # Decimal
+                    'B':4,  # Break
                     'V':6,  # Overflow
                     'N':7}  # Negative
 
@@ -158,7 +160,9 @@ class CPU(object):
     def GetFlag(self, flagName):
         flags = {   'C':0,
                     'Z':1,
-                    'I':3,
+                    'I':2,
+                    'D':3,
+                    'B':4,
                     'V':6,
                     'N':7}
         flagsReg = self.GetRegister('P')

@@ -176,6 +176,7 @@ def doBrk(cpu, instruction):
     cpu.PushWord(cpu.GetRegister('PC')+2)
     cpu.PushByte(cpu.GetRegister('S'))
     cpu.SetFlag('I', 1)
+    cpu.SetFlag('B', 1)
     
     # jmp to irqBrk vector
     target = ReadMemWord(cpu.irqBrk)
@@ -428,15 +429,15 @@ def doSbc(cpu, instruction):
     return False
 
 def doSec(cpu, instruction):
-    cpu.SetFlag('C')
+    cpu.SetFlag('C', 1)
     return False
 
 def doSed(cpu, instruction):
-    cpu.SetFlag('D')
+    cpu.SetFlag('D', 1)
     return False
 
 def doSei(cpu, instruction):
-    cpu.SetFlag('I')
+    cpu.SetFlag('I', 1)
     return False
 
 def doSta(cpu, instruction):
