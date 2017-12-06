@@ -59,11 +59,20 @@ class Rom(object):
 
         self.romBanks = []
         for i in range(0, self.numRomBanks):
-            self.romBanks.append(romData[index:index+bankSize])
+            data = romData[index:index+bankSize]
+            dataBytes = []
+            for c in data:
+                dataBytes.append(struct.unpack('B', c)[0])
+            self.romBanks.append(dataBytes)
             index += bankSize
+
         self.vromBanks = []
         for i in range(0, self.numVromBanks):
-            self.vromBanks.append(romData[index:index+vromBankSize])
+            data = romData[index:index+vromBankSize]
+            dataBytes = []
+            for c in data:
+                dataBytes.append(struct.unpack('B', c)[0])
+            self.vromBanks.append(dataBytes)
             index += vromBankSize
 
         # do this last so romBanks already exist ;)

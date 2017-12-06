@@ -32,7 +32,7 @@ class Memory(object):
 
     def ReadMemory(self, cpu, address):
         (mem, addr) = self.AddressTranslation(cpu, address)
-        return struct.unpack('B', mem[addr])[0]
+        return mem[addr]
 
     def SetMemory(self, cpu, address, value):
         (mem, addr) = self.AddressTranslation(cpu, address)

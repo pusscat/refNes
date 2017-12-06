@@ -39,7 +39,7 @@ def GetValue(cpu, instruction):
         return (cpu.ReadMemory(cpu.ReadRelPC(2) << 8) + cpu.ReadRelPC(1))
     if operType is 'ABSX': # THIS CAN CROSS PAGE BOUNDARY
         lowOrder = cpu.ReadRelPC(1) + cpu.GetRegister('X')
-        hiOrder = cpu.ReadRelPC(2) << 8
+        hiOrder = cpu.ReadRelPC(2)
         if lowOrder > 0xFF:
             instruction.addCycles(1)
         return cpu.ReadMemory((hiOrder << 8) + lowOrder)
