@@ -49,7 +49,7 @@ def getArg(cpu, argString):
     return int(argString, 16)
 
 def printMemLine(lineAddr, dataLine):
-    sys.stdout.write(hex(lineAddr & 0xFFFF) + ": ")
+    sys.stdout.write("0x" + format(lineAddr, '04x') + ": ")
     for byte in dataLine:
         sys.stdout.write(format(byte & 0xFF, '02x') + " ")
     sys.stdout.write("\n")
