@@ -7,6 +7,7 @@ class PPU():
         self.mask       = 0x2001
         self.status     = 0x2002
         self.oamaddr    = 0x2003
+        self.oamdata    = 0x2004
         self.scroll     = 0x2005
         self.addr       = 0x2006
         self.data       = 0x2007
