@@ -36,10 +36,10 @@ def getArg(cpu, argString):
             'X': cpu.GetRegister('X'),
             'Y': cpu.GetRegister('Y'),
             'PC': cpu.GetRegister('PC'),
-            'S': cpu.GetRegister('S') }
+            'S': cpu.GetRegister('S') + 0x0100 }
     for key in registers:
         if key in argString:
-            return register[key]
+            return registers[key]
 
     # if a length arg, remove the L and cast to hex int
     if argString[0] == 'L':
