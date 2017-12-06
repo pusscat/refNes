@@ -28,7 +28,30 @@ def stepCPU(cpu):
     mem = cpu.GetMemory(nextAddr, 3)
     print hex(nextAddr) + " " + disasm(mem, 1)[0]
 
-def handleCmd(cpu, cmd):
+def getArg(cpu, argString):
+    # if a register, get the value
+    registers = {   
+            'A': cpu.GetRegister('A'),
+            'X': cpu.GetRegister('X'),
+            'Y': cpu.GetRegister('Y'),
+            'PC': cpu.GetRegister('PC'),
+            'S': cpu.GetRegister('S') }
+    for key in registers:
+        if key in argString:
+            return register[key]
+
+    # if a length arg, remove the L and cast to hex int
+    if argString[0] == 'L':
+        return int(argString[1:-1], 16)
+
+    # if a number, its always hex
+    return int(argString, 16)
+
+
+def handleCmd(cpu, cmdString):
+    cmdList = cmdString.split()
+    cmd = cmdList[0]
+
     if cmd == 'step' or cmd == 's':
         stepCPU(cpu)
 
