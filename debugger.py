@@ -24,9 +24,13 @@ def cpuInfo(cpu):
     return lines
 
 def debugLoop(cpu):
+    cmd = ''
     while (1):
         sys.stdout.write("> ")
+        lastCmd = cmd
         cmd = sys.stdin.readline().strip()
+        if cmd == '':
+            cmd = lastCmd
         if cmd == 'quit':
             return
         if cmd == 'step' or cmd == 's':

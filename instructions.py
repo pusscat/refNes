@@ -110,7 +110,7 @@ def doAnd(cpu, instruction):
     value = GetValue(cpu, instruction)
     accuVal = cpu.GetRegister('A')
 
-    newVal = accuVal & immVal
+    newVal = accuVal & value
 
     cpu.SetRegister('A', newVal)
     cpu.UpdateFlags(instruction.flags, accuVal, value, newVal, False)
@@ -192,7 +192,7 @@ def doBrk(cpu, instruction):
     cpu.SetFlag('B', 1)
     
     # jmp to irqBrk vector
-    target = ReadMemWord(cpu.irqBrk)
+    target = cpu.ReadMemWord(cpu.irqBrk)
     cpu.SetPC(target)
     return True
 
@@ -303,7 +303,7 @@ def doJmp(cpu, instruction):
 
 def doJsr(cpu, instruction):
     addr = GetAddress(cpu, instruction)
-    cpu.PushWord(cpu.GetRegister('PC') + instruction.size - 1)
+    cpu.PushWord(cpu.GetRegister('PC') + instruction.size)
     cpu.SetPC(addr)
     return True # PC changed by this instruction
 
