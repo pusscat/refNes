@@ -26,16 +26,19 @@ def cpuInfo(cpu):
 def debugLoop(cpu):
     while (1):
         sys.stdout.write("> ")
-        input = sys.stdin.readline()
-        if input.strip() == 'quit':
+        cmd = sys.stdin.readline().strip()
+        if cmd == 'quit':
             return
-        if input.strip() == 'step':
+        if cmd == 'step' or cmd == 's':
             nextAddr = cpu.step()
             mem = cpu.GetMemory(nextAddr, 3)
             print hex(nextAddr) + " " + disasm(mem, 1)[0]
 
-        if input.strip() == 'i':
+        if cmd == 'i':
             print cpuInfo(cpu)
+
+        if cmd == 'run' or cmd == 'r':
+            cpu.runToBreak()
 
 cpu = MOS6502.CPU()
 cpu.LoadRom("smb1.nes")

@@ -73,7 +73,7 @@ class CPU(object):
         return value
 
     def ReadRelPC(self, offset):
-        return self.memory.ReadMemory(self.GetRegister('PC')+offset)
+        return self.ReadMemory(self.GetRegister('PC')+offset)
 
     def SetMemory(self, address, value): # always write 1 byte
         #self.memory[address] = value & 0xFF
@@ -185,11 +185,21 @@ class CPU(object):
         self.cycle += cycles
 
     def step(self):
-        opCode = self.ReadMemory(self.GetRegister('PC'))
-        instruction = instructions.instructions[opCode]
+        addr = self.GetRegister('PC')
+        opCode = self.ReadMemory(addr)
+        try:
+            instruction = instructions.instructions[opCode]
+        except:
+            print "Bad Instruction: " + hex(opCode) + " @ " + hex(addr)
+            self.SetFlag('B', 1)
+            return addr
         instruction.execute(self)
         self.cycle += instruction.cycles
 
         return self.GetRegister('PC')
+
+    def runToBreak(self):
+        while self.GetFlag('B') == 0:
+            self.step()
 
                     

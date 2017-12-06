@@ -36,20 +36,21 @@ def GetValue(cpu, instruction):
     if operType is 'ZEROY':
         return cpu.ReadMemory((cpu.ReadRelPC(1) + cpu.GetRegister('Y')) & 0xFF)
     if operType is 'ABS':
-        return cpu.ReadMemory(cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1))
+        return (cpu.ReadMemory(cpu.ReadRelPC(2) << 8) + cpu.ReadRelPC(1))
     if operType is 'ABSX': # THIS CAN CROSS PAGE BOUNDARY
         lowOrder = cpu.ReadRelPC(1) + cpu.GetRegister('X')
+        hiOrder = cpu.ReadRelPC(2) << 8
         if lowOrder > 0xFF:
             instruction.addCycles(1)
-        return cpu.ReadMemory(cpu.ReadRelPC(2) << 8 + lowOrder)
+        return cpu.ReadMemory((hiOrder << 8) + lowOrder)
     if operType is 'ABSY':
         lowOrder = cpu.ReadRelPC(1) + cpu.GetRegister('Y')
         if lowOrder > 0xFF:
             instruction.addCycles(1)
-        return cpu.ReadMemory(cpu.ReadRelPC(2) << 8 + lowOrder)
+        return cpu.ReadMemory((cpu.ReadRelPC(2) << 8) + lowOrder)
     if operType is 'INDX':
         addrPtr = ((cpu.ReadRelPC(1) + cpu.GetRegister('X')) & 0xFF)
-        return cpu.ReadMemory(cpu.ReadMemory(addrPtr+1) << 8 + cpu.ReadMemory(addrPtr))
+        return cpu.ReadMemory((cpu.ReadMemory(addrPtr+1) << 8) + cpu.ReadMemory(addrPtr))
     if operType is 'INDY':
         highOrder = cpu.ReadMemory(cpu.ReadRelPC(1)+1) << 8
         lowOrder = cpu.ReadMemory(cpu.ReadRelPC(1)) + cpu.GetRegister('Y')
@@ -68,11 +69,11 @@ def GetAddress(cpu, instruction):
     if operType is 'ZEROX':
         return (cpu.ReadRelPC(1) + cpu.GetRegister('X')) & 0xFF
     if operType is 'ABS':
-        return cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1)
+        return (cpu.ReadRelPC(2) << 8) + cpu.ReadRelPC(1)
     if operType is 'ABSX':
-        return cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1) + cpu.GetRegister('X')
+        return (cpu.ReadRelPC(2) << 8) + cpu.ReadRelPC(1) + cpu.GetRegister('X')
     if operType is 'IND':
-        addr = cpu.ReadRelPC(2) << 8 + cpu.ReadRelPC(1)
+        addr = (cpu.ReadRelPC(2) << 8) + cpu.ReadRelPC(1)
         lowOrder = cpu.ReadMemory(addr)
         if (addr & 0xFF) == 0xFF:
             addr = addr & 0xFF00 # DO NOT WALK PAGE BOUNDARIES
@@ -133,7 +134,7 @@ def doBranch(cpu, instruction, flag, value):
     if flagVal is not value:
         return False
 
-    target = cpu.GetValue(cpu, instruction)
+    target = GetValue(cpu, instruction)
     currPC = cpu.GetRegister('PC')
     cpu.SetPC(target)
    
@@ -146,13 +147,13 @@ def doBranch(cpu, instruction, flag, value):
     return True         # true because we change PC in this case
 
 def doBcc(cpu, instruction):
-    return doBranch(cpu, instruction, 'C', False)
+    return doBranch(cpu, instruction, 'C', 0)
 
 def doBcs(cpu, instruction):
-    return doBranch(cpu, instruction, 'C', True)
+    return doBranch(cpu, instruction, 'C', 1)
 
 def doBeq(cpu, instruction):
-    return doBranch(cpu, instruction, 'Z', True)
+    return doBranch(cpu, instruction, 'Z', 1)
 
 def doBit(cpu, instruction):
     value = cpu.GetValue(cpu, instruction)
@@ -164,13 +165,13 @@ def doBit(cpu, instruction):
     return False
 
 def doBmi(cpu, instruction):
-    return doBranch(cpu, instruction, 'N', True)
+    return doBranch(cpu, instruction, 'N', 1)
 
 def doBne(cpu, instruction):
-    return doBranch(cpu, instruction, 'Z', False)
+    return doBranch(cpu, instruction, 'Z', 0)
 
 def doBpl(cpu, instruction):
-    return doBranch(cpu, instruction, 'N', False)
+    return doBranch(cpu, instruction, 'N', 0)
 
 def doBrk(cpu, instruction):
     cpu.PushWord(cpu.GetRegister('PC')+2)
@@ -184,10 +185,10 @@ def doBrk(cpu, instruction):
     return True
 
 def doBvc(cpu, instruction):
-    return doBranch(cpu, instruction, 'V', False)
+    return doBranch(cpu, instruction, 'V', 0)
 
 def doBvs(cpu, instruction):
-    return doBranch(cpu, instruction, 'V', True)
+    return doBranch(cpu, instruction, 'V', 1)
 
 def doClc(cpu, instruction):
     cpu.SetFlag('C', 0)
@@ -298,21 +299,21 @@ def doLda(cpu, instruction):
     value = GetValue(cpu, instruction)
     aVal = cpu.GetRegister('A')
     cpu.SetRegister('A', value)
-    cpu.UpdateFlags(intruction.flags, aVal, value, value, False)
+    cpu.UpdateFlags(instruction.flags, aVal, value, value, False)
     return False
 
 def doLdx(cpu, instruction):
     value = GetValue(cpu, instruction)
     xVal = cpu.GetRegister('X')
     cpu.SetRegister('X', value)
-    cpu.UpdateFlags(intruction.flags, xVal, value, value, False)
+    cpu.UpdateFlags(instruction.flags, xVal, value, value, False)
     return False
 
 def doLdy(cpu, instruction):
     value = GetValue(cpu, instruction)
     yVal = cpu.GetRegister('Y')
     cpu.SetRegister('Y', value)
-    cpu.UpdateFlags(intruction.flags, yVal, value, value, False)
+    cpu.UpdateFlags(instruction.flags, yVal, value, value, False)
     return False
 
 def doLsrAcc(cpu, instruction):
