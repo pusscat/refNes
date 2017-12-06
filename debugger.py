@@ -101,15 +101,26 @@ def disasmMemory(cpu, cmdList):
     for line in lines:
         print line
 
+def printHelp():
+    print "help / ?\t\t - this message"
+    print "step / s\t\t - step one instruction"
+    print "info / i\t\t - show cpu registers"
+    print "go / g  \t\t - run the program until break"
+    print "display / d\t\t - display memory"
+    print "unasm / u\t\t - show instructions"
+    print ""
 
 def handleCmd(cpu, cmdString):
     cmdList = cmdString.split()
     cmd = cmdList[0]
+    
+    if cmd == 'help' or cmd == '?':
+        printHelp()
 
     if cmd == 'step' or cmd == 's':
         stepCPU(cpu)
 
-    if cmd == 'i':
+    if cmd == 'info' or cmd == 'i':
         print cpuInfo(cpu)
 
     if cmd == 'go' or cmd == 'g':
@@ -118,7 +129,7 @@ def handleCmd(cpu, cmdString):
     if cmd == 'display' or cmd == 'd':
         displayMemory(cpu, cmdList)
 
-    if cmd == 'u':
+    if cmd == 'unasm' or cmd == 'u':
         disasmMemory(cpu, cmdList)
 
 
