@@ -24,6 +24,8 @@ def cpuInfo(cpu):
 
     return lines
 
+
+
 def stepCPU(cpu):
     nextAddr = cpu.step()
     mem = cpu.GetMemory(nextAddr, 3)
@@ -84,6 +86,22 @@ def displayMemory(cpu, cmdList):
                 return
         printMemLine(lineAddr, dataLine)
 
+def disasmMemory(cpu, cmdList):
+    if len(cmdList) < 2:
+        print "unassemble memory: u <address> [opt: 'L'ength]"
+        return
+
+    length = 0x8
+    address = getArg(cpu, cmdList[1])
+    if len(cmdList) > 2:
+        length = getArg(cpu, cmdList[2])
+
+    mem = cpu.GetMemory(address, length*3)
+    lines = disasm(mem, length, address)
+    for line in lines:
+        print line
+
+
 def handleCmd(cpu, cmdString):
     cmdList = cmdString.split()
     cmd = cmdList[0]
@@ -100,6 +118,9 @@ def handleCmd(cpu, cmdString):
     if cmd == 'display' or cmd == 'd':
         displayMemory(cpu, cmdList)
 
+    if cmd == 'u':
+        disasmMemory(cpu, cmdList)
+
 
 
 def debugLoop(cpu):
@@ -110,7 +131,7 @@ def debugLoop(cpu):
         cmd = sys.stdin.readline().strip()
         if cmd == '':
             cmd = lastCmd
-        if cmd == 'quit':
+        if cmd == 'quit' or cmd == 'q':
             return
         handleCmd(cpu, cmd)
 

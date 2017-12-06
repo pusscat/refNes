@@ -1,14 +1,18 @@
 import MOS6502
 import instructions
 
-def disasm(memory, maxLines=0):
+def disasm(memory, maxLines=0, address=-1):
     index = 0
     lines = []
 
     while index < len(memory):
         currInst = instructions.instructions[memory[index]]
         
-        line = currInst.mnem + " "
+        if address > 0:
+            line = format(address+index, '04x') + ": "
+        else:
+            line = ''
+        line += currInst.mnem + " "
         line += currInst.operType + " "
         if currInst.size > 1:
             if 'ABS' in currInst.operType:
