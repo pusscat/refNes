@@ -23,6 +23,21 @@ def cpuInfo(cpu):
 
     return lines
 
+def stepCPU(cpu):
+    nextAddr = cpu.step()
+    mem = cpu.GetMemory(nextAddr, 3)
+    print hex(nextAddr) + " " + disasm(mem, 1)[0]
+
+def handleCmd(cpu, cmd):
+    if cmd == 'step' or cmd == 's':
+        stepCPU(cpu)
+
+    if cmd == 'i':
+        print cpuInfo(cpu)
+
+    if cmd == 'run' or cmd == 'r':
+        cpu.runToBreak()
+
 def debugLoop(cpu):
     cmd = ''
     while (1):
@@ -33,16 +48,7 @@ def debugLoop(cpu):
             cmd = lastCmd
         if cmd == 'quit':
             return
-        if cmd == 'step' or cmd == 's':
-            nextAddr = cpu.step()
-            mem = cpu.GetMemory(nextAddr, 3)
-            print hex(nextAddr) + " " + disasm(mem, 1)[0]
-
-        if cmd == 'i':
-            print cpuInfo(cpu)
-
-        if cmd == 'run' or cmd == 'r':
-            cpu.runToBreak()
+        handleCmd(cpu, cmd)
 
 cpu = MOS6502.CPU()
 cpu.LoadRom("smb1.nes")
