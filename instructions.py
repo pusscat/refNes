@@ -72,6 +72,8 @@ def GetAddress(cpu, instruction):
         return (cpu.ReadRelPC(2) << 8) + cpu.ReadRelPC(1)
     if operType is 'ABSX':
         return (cpu.ReadRelPC(2) << 8) + cpu.ReadRelPC(1) + cpu.GetRegister('X')
+    if operType is 'ABSY':
+        return (cpu.ReadRelPC(2) << 8) + cpu.ReadRelPC(1) + cpu.GetRegister('Y')
     if operType is 'IND':
         addr = (cpu.ReadRelPC(2) << 8) + cpu.ReadRelPC(1)
         lowOrder = cpu.ReadMemory(addr)
@@ -79,8 +81,18 @@ def GetAddress(cpu, instruction):
             addr = addr & 0xFF00 # DO NOT WALK PAGE BOUNDARIES
         highOrder = cpu.ReadMemory(addr+1) << 8
         return  cpu.ReadMemory(highOrder + lowOrder)
+    if operType is 'INDX':
+        addrPtr = ((cpu.ReadRelPC(1) + cpu.GetRegister('X')) & 0xFF)
+        return ((cpu.ReadMemory(addrPtr+1) << 8) + cpu.ReadMemory(addrPtr))
+    if operType is 'INDY':
+        highOrder = cpu.ReadMemory(cpu.ReadRelPC(1)+1) << 8
+        lowOrder = cpu.ReadMemory(cpu.ReadRelPC(1)) + cpu.GetRegister('Y')
+        if lowOrder > 0xFF:
+            instruction.addCycles(1)
+            # we should NOT add 1 to high order in this case.
+        return (highOrder + lowOrder)
 
-    return address
+    return None
 
 
 def doAdc(cpu, instruction):
@@ -113,7 +125,7 @@ def doAsl(cpu, instruction):
     if newVal > 0xFF:
         cpu.SetFlag('C')
     cpu.SetMemory(address, newVal)
-    cpu.UpdateFlags(intruction.flags, memVal, memVal, newVal, False)
+    cpu.UpdateFlags(instruction.flags, memVal, memVal, newVal, False)
     return False
 
 def doAslAccu(cpu, instruction):
@@ -125,7 +137,7 @@ def doAslAccu(cpu, instruction):
        cpu.SetFlag('C')
 
     cpu.SetRegister('A', newVal)
-    cpu.UpdateFlags(intruction.flags, accuVal, accuVal, newVal, False)
+    cpu.UpdateFlags(instruction.flags, accuVal, accuVal, newVal, False)
     return False
 
 
@@ -156,7 +168,7 @@ def doBeq(cpu, instruction):
     return doBranch(cpu, instruction, 'Z', 1)
 
 def doBit(cpu, instruction):
-    value = cpu.GetValue(cpu, instruction)
+    value = GetValue(cpu, instruction)
     accuVal = cpu.GetRegister('A')
 
     cpu.SetFlag('N', (value & (1 << 7)) >> 7)
@@ -207,7 +219,7 @@ def doClv(cpu, instruction):
     return False
 
 def doCmp(cpu, instruction):
-    value = cpu.GetValue(cpu, instruction)
+    value = GetValue(cpu, instruction)
     accuVal = cpu.GetRegister('A')
     
     newVal = accuVal - value
@@ -216,7 +228,7 @@ def doCmp(cpu, instruction):
     return False
 
 def doCpx(cpu, instruction):
-    value = cpu.GetValue(cpu, instruction)
+    value = GetValue(cpu, instruction)
     xVal = cpu.GetRegister('X')
 
     newVal = xVal - value
@@ -225,7 +237,7 @@ def doCpx(cpu, instruction):
     return False
 
 def doCpy(cpu, instruction):
-    value = cpu.GetValue(cpu, instruction)
+    value = GetValue(cpu, instruction)
     yVal = cpu.GetRegister('Y')
 
     newVal = yVal - value
@@ -239,28 +251,28 @@ def doDec(cpu, instruction):
 
     newVal = memVal - 1
     cpu.SetMemory(addrVal, newVal)
-    cpu.UpdateFlags(intruction.flags, memVal, memVal, newVal, True)
+    cpu.UpdateFlags(instruction.flags, memVal, memVal, newVal, True)
     return False
 
 def doDex(cpu, instruction):
     xVal = cpu.GetRegister('X')
     cpu.SetRegister('X', xVal-1)
-    cpu.UpdateFlags(intruction.flags, xVal, xVal, xVal-1, True)
+    cpu.UpdateFlags(instruction.flags, xVal, xVal, xVal-1, True)
     return False
 
 def doDey(cpu, instruction):
     yVal = cpu.GetRegister('Y')
     cpu.SetRegister('Y', yVal-1)
-    cpu.UpdateFlags(intruction.flags, yVal, yVal, yVal-1, True)
+    cpu.UpdateFlags(instruction.flags, yVal, yVal, yVal-1, True)
     return False
 
 def doEor(cpu, instruction):
     aVal = cpu.GetRegister('A')
-    value = cpu.GetValue(cpu, instruction)
+    value = GetValue(cpu, instruction)
 
     newVal = aVal ^ value
     cpu.SetRegister('A', newVal)
-    cpu.UpdateFlags(intruction.flags, aVal, value, newVal, False)
+    cpu.UpdateFlags(instruction.flags, aVal, value, newVal, False)
     return False
 
 def doInc(cpu, instruction):
@@ -269,19 +281,19 @@ def doInc(cpu, instruction):
 
     newVal = memVal + 1
     cpu.SetMemory(addrVal, newVal)
-    cpu.UpdateFlags(intruction.flags, memVal, memVal, newVal, False)
+    cpu.UpdateFlags(instruction.flags, memVal, memVal, newVal, False)
     return False 
 
 def doInx(cpu, instruction):
     xVal = cpu.GetRegister('X')
     cpu.SetRegister('X', xVal+1)
-    cpu.UpdateFlags(intruction.flags, xVal, xVal, xVal+1, True)
+    cpu.UpdateFlags(instruction.flags, xVal, xVal, xVal+1, True)
     return False
 
 def doIny(cpu, instruction):
     yVal = cpu.GetRegister('Y')
     cpu.SetRegister('Y', yVal+1)
-    cpu.UpdateFlags(intruction.flags, yVal, yVal, yVal+1, True)
+    cpu.UpdateFlags(instruction.flags, yVal, yVal, yVal+1, True)
     return False
 
 def doJmp(cpu, instruction):
@@ -322,7 +334,7 @@ def doLsrAcc(cpu, instruction):
     cpu.SetRegister('A', newVal)
     cBit = aVal & 1
     cpu.SetFlag('C', cBit)
-    cpu.UpdateFlags(intruction.flags, aVal, aVal, newVal, True)
+    cpu.UpdateFlags(instruction.flags, aVal, aVal, newVal, True)
     return False
 
 def doLsr(cpu, instruction):
@@ -332,7 +344,7 @@ def doLsr(cpu, instruction):
     cpu.SetMemory(address, newVal)
     cBit = value & 1
     cpu.SetFlag('C', cBit)
-    cpu.UpdateFlags(intruction.flags, value, value, newVal, True)
+    cpu.UpdateFlags(instruction.flags, value, value, newVal, True)
     return False
 
 def doNop(cpu, instruction):
@@ -344,7 +356,7 @@ def doOra(cpu, instruction):
 
     newVal = aVal | value
 
-    cpu.UpdateFlags(intruction.flags, aVal, value, newVal, False)
+    cpu.UpdateFlags(instruction.flags, aVal, value, newVal, False)
     return False
 
 def doPha(cpu, instruction):
@@ -602,7 +614,7 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xD8: Instruction('CLD', doCld, '', 1, 2),
                 0x58: Instruction('CLI', doCli, '', 1, 2),
                 0xB8: Instruction('CLV', doClv, '', 1, 2),
-                0xC0: Instruction('CMP', doCmp, 'IMM', 2, 2),
+                0xC9: Instruction('CMP', doCmp, 'IMM', 2, 2),
                 0xC5: Instruction('CMP', doCmp, 'ZERO', 2, 3),
                 0xD5: Instruction('CMP', doCmp, 'ZEROX', 2, 4),
                 0xCD: Instruction('CMP', doCmp, 'ABS', 3, 4),
@@ -633,8 +645,8 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xF6: Instruction('INC', doInc, 'ZEROX', 2, 6),
                 0xEE: Instruction('INC', doInc, 'ABS', 3, 6),
                 0xFE: Instruction('INC', doInc, 'ABSX', 3, 7),
-                0xE8: Instruction('INX', doInc, '', 1, 2),
-                0xC8: Instruction('INY', doInc, '', 1, 2),
+                0xE8: Instruction('INX', doInx, '', 1, 2),
+                0xC8: Instruction('INY', doIny, '', 1, 2),
                 0x4C: Instruction('JMP', doJmp, 'ABS', 3, 3),
                 0x4C: Instruction('JMP', doJmp, 'IND', 3, 3),
                 0x20: Instruction('JSR', doJsr, 'ABS', 3, 6),
