@@ -148,5 +148,6 @@ def debugLoop(cpu):
 
 cpu = MOS6502.CPU()
 cpu.LoadRom("smb1.nes")
+cpu.Reset()
 debugLoop(cpu)
 

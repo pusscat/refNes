@@ -1,4 +1,5 @@
 import instructions
+from nesPPU import PPU
 from nesMemory import Memory
 from nesCart import Rom
 
@@ -41,8 +42,8 @@ class CPU(object):
         self.pastMemory = []
         #self.symbMemory = z3Array('mem', z3.BitVecSort(bitwidth), z3.BitVecSort(8))
 
-        self.regs['PC'].SetValue(baseAddress)
-        self.regs['S'].SetValue(0xFF)
+        self.regs['PC'].SetValue(0)
+        self.regs['S'].SetValue(0)
 
         self.cycle = 0
 
@@ -53,12 +54,25 @@ class CPU(object):
         self.nmi        = 0xFFFA
         self.reset      = 0xFFFC
         self.irqBrk     = 0xFFFE
+        self.frameIrq   = 0x4017
+        self.channels   = 0x4015
 
         self.rom = None
+        self.ppu = PPU(self)
+
+    def ClearMemory(self):
+        self.memory.ClearMemory()
+
+    def Reset(self):
+        # https://wiki.nesdev.com/w/index.php/CPU_power_up_state 
+        start = self.ReadMemWord(self.reset)
+        self.SetPC(start)
+        self.SetRegister('S', 0xFD)
+        self.SetRegister('P', 0x00)
+        self.ClearMemory()
 
     def mapMem(self, address):
         return self.rom.mapMem(self, address)
-
 
     def LoadRom(self, romPath):
         self.rom = Rom(romPath, self)

@@ -6,6 +6,9 @@ class Memory(object):
         # some of this changes due to mappers
         self.memory = 0x10000 * [0]
 
+    def ClearMemory(self):
+        self.memory = 0x10000 * [0]
+
     def AddressTranslation(self, cpu, address):
         # handle basic mirroring here
         if address > 0x7FF and address < 0x2000:
