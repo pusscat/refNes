@@ -82,6 +82,9 @@ class CPU(object):
     def ReadMemory(self, address): # always read 1 byte
         return self.memory.ReadMemory(self, address)
 
+    def ReadVMemory(self, address):
+        return self.rom.ReadVMemory(self, address)
+
     def ReadMemWord(self, address):
         value  = self.ReadMemory(address)
         value += self.ReadMemory(address + 1) << 8 
