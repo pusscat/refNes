@@ -1,4 +1,5 @@
 import sys
+import struct
 
 import MOS6502
 from disasm import disasm
@@ -42,11 +43,46 @@ def getArg(cpu, argString):
 
     # if a length arg, remove the L and cast to hex int
     if argString[0] == 'L':
-        return int(argString[1:-1], 16)
+        return int(argString[1:], 16)
 
     # if a number, its always hex
     return int(argString, 16)
 
+def printMemLine(lineAddr, dataLine):
+    sys.stdout.write(hex(lineAddr & 0xFFFF) + ": ")
+    for byte in dataLine:
+        sys.stdout.write(format(byte & 0xFF, '02x') + " ")
+    sys.stdout.write("\n")
+'''    
+    sys.stdout.write("\t |")
+    for byte in dataLine:
+        print byte
+        sys.stdout.write(format(byte, 'c'))
+    print "|"
+'''
+
+def displayMemory(cpu, cmdList):
+    if len(cmdList) < 2:
+        print "display memory: d <address> [opt: 'L'ength]"
+        return
+
+    lineLen = 0x10
+    length = 0x40 # default length to show
+    address = getArg(cpu, cmdList[1])
+    if len(cmdList) > 2:
+        length = getArg(cpu, cmdList[2])
+
+    index = 0
+    while index < length:
+        dataLine = []
+        lineAddr = address + index
+        for i in range(0, lineLen):
+            dataLine.append(cpu.ReadMemory(address + index))
+            index += 1
+            if index == length:
+                printMemLine(lineAddr, dataLine)
+                return
+        printMemLine(lineAddr, dataLine)
 
 def handleCmd(cpu, cmdString):
     cmdList = cmdString.split()
@@ -58,8 +94,13 @@ def handleCmd(cpu, cmdString):
     if cmd == 'i':
         print cpuInfo(cpu)
 
-    if cmd == 'run' or cmd == 'r':
+    if cmd == 'go' or cmd == 'g':
         cpu.runToBreak()
+
+    if cmd == 'display' or cmd == 'd':
+        displayMemory(cpu, cmdList)
+
+
 
 def debugLoop(cpu):
     cmd = ''
