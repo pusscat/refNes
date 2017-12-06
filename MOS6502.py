@@ -59,6 +59,7 @@ class CPU(object):
 
         self.rom = None
         self.ppu = PPU(self)
+        self.paused = False
 
     def ClearMemory(self):
         self.memory.ClearMemory()
@@ -209,11 +210,14 @@ class CPU(object):
             return addr
         instruction.execute(self)
         self.cycle += instruction.cycles
+        self.ppu.runPPU(self.cycle)
+        self.cycle = 0
 
         return self.GetRegister('PC')
 
     def runToBreak(self):
-        while self.GetFlag('B') == 0:
+        while self.paused == False:
             self.step()
+            # sleep the right amount here after CPU and PPU are stepped
 
                     
