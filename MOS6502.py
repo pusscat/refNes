@@ -84,6 +84,13 @@ class CPU(object):
             self.SetMemory(address, value)
             address = address + 1
 
+    def GetMemory(self, address, size):
+        mem = []
+        for i in range(0, size):
+            mem.append(self.ReadMemory(address+i))
+
+        return mem
+
     def GetRegister(self, name):
         return self.regs[name].GetValue()
 
@@ -183,6 +190,6 @@ class CPU(object):
         instruction.execute(self)
         self.cycle += instruction.cycles
 
-        return self
+        return self.GetRegister('PC')
 
                     

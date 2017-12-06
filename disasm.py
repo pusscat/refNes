@@ -1,7 +1,7 @@
 import MOS6502
 import instructions
 
-def disasm(memory):
+def disasm(memory, maxLines=0):
     index = 0
     lines = []
 
@@ -19,5 +19,8 @@ def disasm(memory):
 
         lines.append(line)
         index += currInst.size
+        
+        if maxLines != 0 and len(lines) == maxLines:
+            return lines
 
     return lines

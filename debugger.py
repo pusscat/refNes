@@ -1,6 +1,7 @@
 import sys
 
 import MOS6502
+from disasm import disasm
 
 def cpuInfo(cpu):
     lines = ''
@@ -29,7 +30,10 @@ def debugLoop(cpu):
         if input.strip() == 'quit':
             return
         if input.strip() == 'step':
-            cpu.step()
+            nextAddr = cpu.step()
+            mem = cpu.GetMemory(nextAddr, 3)
+            print hex(nextAddr) + " " + disasm(mem, 1)[0]
+
         if input.strip() == 'i':
             print cpuInfo(cpu)
 
