@@ -50,12 +50,21 @@ class CPU(object):
         self.stackBase  = 0x0100
         self.ppuMem     = 0x2000
         self.apuMem     = 0x4000
-        self.programRom = 0x8000
+        self.channels   = 0x4015
+        self.ctrl1      = 0x4016
+        self.ctrl2      = 0x4017
         self.nmi        = 0xFFFA
         self.reset      = 0xFFFC
         self.irqBrk     = 0xFFFE
-        self.frameIrq   = 0x4017
-        self.channels   = 0x4015
+
+        self.ctrlA      = 7
+        self.ctrlB      = 6
+        self.select     = 5
+        self.start      = 4
+        self.up         = 3
+        self.down       = 2
+        self.left       = 1
+        self.right      = 0
 
         self.rom = None
         self.ppu = PPU(self)

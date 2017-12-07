@@ -3,6 +3,8 @@ class PPU():
     def __init__(self, cpu):
         self.cpu = cpu
 
+        # shared memory registers, comprising 0x2000 - 0x2007
+        # and mirrored to 0x4000 on the main cpu memory
         self.registers = [0x00] * 8
 
         self.ctrl       = 0
@@ -14,6 +16,23 @@ class PPU():
         self.addr       = 6
         self.data       = 7
 
+        # General PPU registers
+        self.nameTable      = 0         # 0 - 3
+        self.genInterrupts  = False     # Do we NMI
+        self.vramIncrement  = 0         # how far do we inc vram per read
+
+        # Background registers
+        self.bgTileAddr     = 0         # background tileset address
+        self.clipBG         = False     # hide left 8 pixels?
+        self.enableBG       = False     # render background?
+
+        # Sprite registers
+        self.clipSprites    = False     # hide sprites in left 8 pixels
+        self.enableSprites  = False     # render sprites?
+        self.spHeight       = 8         # can be 8 or 16 pixels
+        self.spTileAddr     = 0         # sprite tileset address
+
+        
 
     def ReadPPURegister(self, addr):
         addr -= 0x2000

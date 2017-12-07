@@ -2,8 +2,7 @@ import struct
 
 class Memory(object):
     def __init__(self):
-        # some of this isnt used due to mirroring
-        # some of this changes due to mappers
+        # 7FF - 4000 and 6000+ isnt even used
         self.memory = 0x8000 * [0]
 
     def ClearMemory(self):
@@ -22,7 +21,7 @@ class Memory(object):
         # handle nametable mirroring here - XXX
 
         # handle all other mapper specific stuff
-        if address > 0x5FFF and address < 0x10000:
+        if address > 0x7FFF and address < 0x10000:
             return cpu.mapMem(address)
         
         # pass back both memory block and address so mappers 
