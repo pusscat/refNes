@@ -3,33 +3,25 @@ class PPU():
     def __init__(self, cpu):
         self.cpu = cpu
 
-        self.ctrl       = 0
-        self.mask       = 0
-        self.status     = 0
-        self.oamaddr    = 0
-        self.oamdata    = 0
-        self.scroll     = 0
-        self.addr       = 0
-        self.data       = 0
+        self.registers = [0x00] * 8
 
-        self.regAddrs = {
-                    0 : 'ctrl',
-                    1 : 'mask',
-                    2 : 'status',
-                    3 : 'oamaddr',
-                    4 : 'oamdata',
-                    5 : 'scroll',
-                    6 : 'addr',
-                    7 : 'data'}
+        self.ctrl       = 0
+        self.mask       = 1
+        self.status     = 2
+        self.oamaddr    = 3
+        self.oamdata    = 4
+        self.scroll     = 5
+        self.addr       = 6
+        self.data       = 7
 
 
     def ReadPPURegister(self, addr):
         addr -= 0x2000
-        return getattr(self, self.regAddrs[addr])
+        return self.registers[addr] 
 
     def SetPPURegister(self, addr, value):
         addr -= 0x2000
-        setattr(self, self.regAddrs[addr], value & 0xFF)
+        self.registers[addr] = value & 0xFF
         return value & 0xFF
 
     def stepPPU(self):
