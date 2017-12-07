@@ -4,10 +4,10 @@ class Memory(object):
     def __init__(self):
         # some of this isnt used due to mirroring
         # some of this changes due to mappers
-        self.memory = 0x10000 * [0]
+        self.memory = 0x8000 * [0]
 
     def ClearMemory(self):
-        self.memory = 0x10000 * [0]
+        self.memory = 0x8000 * [0]
 
     def AddressTranslation(self, cpu, address):
         # handle basic mirroring here
@@ -17,6 +17,7 @@ class Memory(object):
         # handle ppu i/o register mirroring here
         if address > 0x2007 and address < 0x4000:
             address = 0x2000 + (address % 8)
+            return (None, address)
        
         # handle nametable mirroring here - XXX
 
@@ -35,9 +36,19 @@ class Memory(object):
 
     def ReadMemory(self, cpu, address):
         (mem, addr) = self.AddressTranslation(cpu, address)
+        
+        # Read from PPU registers
+        if address >= 0x2000 and address < 0x2008:
+            return cpu.ppu.ReadPPURegister(address)
+        
         return mem[addr]
 
     def SetMemory(self, cpu, address, value):
         (mem, addr) = self.AddressTranslation(cpu, address)
+        
+        # Write to PPU registers
+        if address >= 0x2000 and address < 0x2008:
+            return cpu.ppu.SetPPURegister(address, value)
+
         mem[addr] = value & 0xFF
         return value & 0xFF
