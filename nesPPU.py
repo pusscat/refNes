@@ -63,9 +63,9 @@ class PPU():
         self.registers[addr] = value & 0xFF
         return value & 0xFF
 
-    def AddressTranslation(self, cpu, addr):
+    def AddressTranslation(self, addr):
         if addr < self.nameTable0:  # mapped by mapper in cart
-            return cpu.mapVMem(addr)
+            return self.cpu.mapVMem(addr)
 
         # adjust for name table mirror
         if addr >= 0x3000 and addr < 0x3F00:
@@ -87,6 +87,14 @@ class PPU():
 
         return (self.memory, addr)
 
+    def ReadMemory(self, address):
+        (mem, addr) = self.AddressTranslation(address)
+        return mem[addr]
+
+    def SetMemory(self, address, value):
+        (mem, addr) = self.AddressTranslation(address)
+        mem[addr] = value & 0xFF
+        return value & 0xFF
 
     def stepPPU(self):
         # each step draws one pixel
