@@ -3,7 +3,7 @@ class PPU():
     def __init__(self, cpu):
         self.cpu = cpu
         self.memory = [0x00] * 0x4000
-        self.oamMemory [0x00] * 0x100
+        self.oamMemory = [0x00] * 0x100
 
         # PPU memory addresses
         self.patternTable0  = 0x0000
