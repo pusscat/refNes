@@ -84,6 +84,9 @@ class CPU(object):
     def mapMem(self, address):
         return self.rom.mapMem(self, address)
 
+    def mapVMem(self, address):
+        return self.rom.mapVMem(self, address)
+
     def LoadRom(self, romPath):
         self.rom = Rom(romPath, self)
         return self.rom

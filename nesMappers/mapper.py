@@ -10,6 +10,9 @@ class Mapper:
 
     def mapMem(self, cpu, address):
         return self.mapper.mapMem(cpu, address)
+    
+    def mapVMem(self, cpu, address):
+        return self.mapper.mapVMem(cpu, address)
 
     def ReadVMemory(self, cpu, address):
         return self.mapper.ReadVMemory(cpu, address)
