@@ -6,6 +6,12 @@ class PPU():
         self.renderer = renderer.Renderer()
         self.memory = [0x00] * 0x4000
         self.sprMemory = [0x00] * 0x100
+        self.screen = [[0x00] * 320] * 240
+        self.tube_x = 0
+        self.tube_y = 0
+        self.bg_color = 0
+        self.hblank = 0
+        self.vblank = 0
 
         # PPU memory addresses
         self.patternTable0  = 0x0000
@@ -94,6 +100,18 @@ class PPU():
     def GetHit(self):
         return self.GetRegister(self.status) & (1 << 6)
 
+    def GetImgMask(self):
+        return self.GetRegister(self.ctrl2) & (1 << 1)
+
+    def GetSprMask(self):
+        return self.GetRegister(self.ctrl2) & (1 << 2)
+
+    def GetScreenEnable(self):
+        return self.GetRegister(self.ctrl2) & (1 << 3)
+
+    def GetSprEnable(self):
+        return self.GetRegister(self.ctrl2) & (1 << 4)
+
     def AddressTranslation(self, addr):
         if addr < self.nameTable0:  # mapped by mapper in cart
             return self.cpu.mapVMem(addr)
@@ -127,9 +145,24 @@ class PPU():
         mem[addr] = value & 0xFF
         return value & 0xFF
 
+    def UpdateFrame(self):
+        pass
+
     def stepPPU(self):
         # each step draws one pixel
-        pass
+        self.hblank = 0
+        self.UpdateFrame()
+
+        self.renderer.Update(self.screen, self.tube_x, self.tube_y)
+        self.tube_x += 1
+        if self.tube_x == 320:
+            self.tube_x = 0
+            self.tube_y += 1
+            self.hblank = 1
+        if self.tube_y == 240:
+            self.tube_y = 0
+            self.vblank = 1
+
 
     def runPPU(self, numCPUCycles):
         # we get to run 3 PPU cycles for every 1 CPU cycle
