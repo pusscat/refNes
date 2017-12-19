@@ -9,9 +9,9 @@ class PPU():
         self.screen = [[0x00] * 320] * 240
         self.tube_x = 0
         self.tube_y = 0
-        self.bg_color = 0
         self.hblank = 0
         self.vblank = 0
+        self.lastBGWrite = 0
 
         # PPU memory addresses
         self.patternTable0  = 0x0000
@@ -47,8 +47,8 @@ class PPU():
         self.vramData       = 7
 
         self.scanline = 0
-        self.scroll_x = 0
-        self.scroll_y = [0x00] * 240
+        self.scroll_x = [0x00] * 262
+        self.scroll_y = 0
         self.latch_lo = 0
         self.latch_hi = 0
 
@@ -91,6 +91,9 @@ class PPU():
         for i in range(0, 0x100):
             self.sprMemory[i] = self.cpu.ReadMemory[(value << 8)+i]
 
+    def GetBGColor(self):
+        return self.memory[self.lastBGWrite]
+
     def GetVWrite(self):
         return self.GetRegister(self.ctrl1) & (1 << 2)
 
@@ -120,6 +123,7 @@ class PPU():
         if addr >= 0x3000 and addr < 0x3F00:
             addr -= 0x1000
 
+
         # now if in nametable 2 or 3 mirror 0 or 1 based on the cart
         # dont do mirroring at all if the fourScreen bit is set
         if self.fourScreen == 0:
@@ -142,10 +146,15 @@ class PPU():
 
     def SetMemory(self, address, value):
         (mem, addr) = self.AddressTranslation(address)
+        
+        if addr >= 0x3F10 and addr < 0x3F20:
+            self.lastBGWrite = addr
+
         mem[addr] = value & 0xFF
         return value & 0xFF
 
     def UpdateFrame(self):
+
         pass
 
     def stepPPU(self):
