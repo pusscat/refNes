@@ -28,39 +28,57 @@ class PPU():
         # shared memory registers, comprising 0x2000 - 0x2007
         # and mirrored to 0x4000 on the main cpu memory
         self.registers = [0x00] * 8
+        self.flipflop0 = 0
+        self.flipflop1 = 0
 
         self.ctrl1          = 0
         self.ctrl2          = 1
         self.status         = 2
-        self.sprLatch       = 3
+        self.sprLatch       = 3     
         self.sprData        = 4
-        self.vramLatchLo    = 5
-        self.vramLatchHi    = 6
+        self.vramScroll     = 5
+        self.vramLatch      = 6
         self.vramData       = 7
 
-        # General PPU registers
-        self.nameTable      = 0         # 0 - 3
-        self.genInterrupts  = False     # Do we NMI
-        self.vramIncrement  = 0         # how far do we inc vram per read
-
-        # Background registers
-        self.bgTileAddr     = 0         # background tileset address
-        self.clipBG         = False     # hide left 8 pixels?
-        self.enableBG       = False     # render background?
-
-        # Sprite registers
-        self.clipSprites    = False     # hide sprites in left 8 pixels
-        self.enableSprites  = False     # render sprites?
-        self.spHeight       = 8         # can be 8 or 16 pixels
-        self.spTileAddr     = 0         # sprite tileset address
-
+        self.scanline = 0
+        self.scroll_x = 0
+        self.scroll_y = [0x00] * 240
+        self.latch_lo = 0
+        self.latch_hi = 0
 
     def GetRegister(self, addr):
         return self.registers[addr] 
 
     def SetRegister(self, addr, value):
+        if addr == self.sprLatch:
+            self.flipflop1 = 0
+        if addr == self.sprData:
+            newLatch = self.GetRegister(self.sprLatch)+1
+            self.SetRegister(self.sprLatch, newLatch)
+        if addr == self.vramScroll:
+            if self.flipflop0 == 0:
+                if value < 240:
+                    self.scroll_y[self.scanline] = value
+            else:
+                self.scroll_x = value
+            self.flipflop0 = 1
+        if addr == self.vramLatch:
+            if self.flipflop1 == 0:
+                self.latch_lo = value
+            else:
+                self.latch_hi = value
+            self.flipflop1 = 1
+        if addr == self.vramData:
+            storAddr = self.latch_lo | (self.latch_hi << 8)
+
         self.registers[addr] = value & 0xFF
         return value & 0xFF
+
+    def GetVBlank(self):
+        return GetRegister(self.status) & (1 << 7)
+
+    def GetHit(self):
+        return GetRegister(self.status) & (1 << 6)
 
     def AddressTranslation(self, addr):
         if addr < self.nameTable0:  # mapped by mapper in cart

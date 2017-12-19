@@ -38,7 +38,8 @@ class Memory(object):
         
         # Read from PPU registers
         if address >= 0x2000 and address < 0x2008:
-            return cpu.ppu.ReadPPURegister(address)
+            address -= 0x2000
+            return cpu.ppu.GetRegister(address)
         
         return mem[addr]
 
@@ -47,7 +48,8 @@ class Memory(object):
         
         # Write to PPU registers
         if address >= 0x2000 and address < 0x2008:
-            return cpu.ppu.SetPPURegister(address, value)
+            address -= 0x2000
+            return cpu.ppu.SetRegister(address, value)
 
         mem[addr] = value & 0xFF
         return value & 0xFF
