@@ -16,12 +16,12 @@ from disasm import disasm
 class TestCartHeaderParsing(unittest.TestCase):
     def testMagic(self):
         cpu = MOS6502.CPU()
-        cpu.loadRom("../smb1.nes")
+        cpu.LoadRom("../smb1.nes")
         self.assertEqual(cpu.rom != None, True)
 
     def testRomBanks(self):
         cpu = MOS6502.CPU()
-        cpu.loadRom("../smb1.nes")
+        cpu.LoadRom("../smb1.nes")
         self.assertEqual(cpu.rom.numRomBanks, 2)
         self.assertEqual(cpu.rom.numVromBanks, 1)
 
@@ -31,7 +31,7 @@ class TestCartHeaderParsing(unittest.TestCase):
 
     def testDisasmRomBank(self):
         cpu = MOS6502.CPU()
-        cpu.loadRom("../smb1.nes")
+        cpu.LoadRom("../smb1.nes")
 
         address = cpu.ReadMemWord(cpu.reset)
         code = []

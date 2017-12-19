@@ -2,6 +2,7 @@ import instructions
 from nesPPU import PPU
 from nesMemory import Memory
 from nesCart import Rom
+from nesControllers import Controllers
 
 class Register(object):
     def __init__(self, name, bitwidth):
@@ -50,6 +51,7 @@ class CPU(object):
         self.stackBase  = 0x0100
         self.ppuMem     = 0x2000
         self.apuMem     = 0x4000
+        self.sprDMA     = 0x4014
         self.channels   = 0x4015
         self.ctrl1      = 0x4016
         self.ctrl2      = 0x4017
@@ -68,6 +70,7 @@ class CPU(object):
 
         self.rom = None
         self.ppu = PPU(self)
+        self.controllers = Controllers(self)
         self.paused = False
 
     def ClearMemory(self):
@@ -226,6 +229,7 @@ class CPU(object):
         instruction.execute(self)
         self.cycle += instruction.cycles
         self.ppu.runPPU(self.cycle)
+        self.controllers.getInput()
         self.cycle = 0
 
         return self.GetRegister('PC')

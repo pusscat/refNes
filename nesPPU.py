@@ -1,7 +1,9 @@
+import renderer
 
 class PPU():
     def __init__(self, cpu):
         self.cpu = cpu
+        self.renderer = renderer.Renderer()
         self.memory = [0x00] * 0x4000
         self.oamMemory = [0x00] * 0x100
 
@@ -27,14 +29,14 @@ class PPU():
         # and mirrored to 0x4000 on the main cpu memory
         self.registers = [0x00] * 8
 
-        self.ctrl       = 0
-        self.mask       = 1
-        self.status     = 2
-        self.oamaddr    = 3
-        self.oamdata    = 4
-        self.scroll     = 5
-        self.addr       = 6
-        self.data       = 7
+        self.ctrl1          = 0
+        self.ctrl2          = 1
+        self.status         = 2
+        self.sprLatch       = 3
+        self.sprData        = 4
+        self.vramLatchLo    = 5
+        self.vramLatchHi    = 6
+        self.vramData       = 7
 
         # General PPU registers
         self.nameTable      = 0         # 0 - 3
@@ -52,14 +54,11 @@ class PPU():
         self.spHeight       = 8         # can be 8 or 16 pixels
         self.spTileAddr     = 0         # sprite tileset address
 
-        
 
-    def ReadPPURegister(self, addr):
-        addr -= 0x2000
+    def GetRegister(self, addr):
         return self.registers[addr] 
 
-    def SetPPURegister(self, addr, value):
-        addr -= 0x2000
+    def SetRegister(self, addr, value):
         self.registers[addr] = value & 0xFF
         return value & 0xFF
 
