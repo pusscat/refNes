@@ -22,7 +22,7 @@ class Mapper:
             return (self.bank2, address - self.bank2Start)
       
     def mapVMem(self, cpu, address):
-        return (vbank, address)
+        return (self.vbank, address)
 
     def ReadVMemory(self, cpu, address):
         # XXX - This is probably wrong

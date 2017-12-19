@@ -69,8 +69,8 @@ class CPU(object):
         self.right      = 0
 
         self.rom = None
-        self.ppu = PPU(self)
-        self.controllers = Controllers(self)
+        self.ppu = None
+        self.controllers = None
         self.paused = False
 
     def ClearMemory(self):
@@ -83,6 +83,8 @@ class CPU(object):
         self.SetRegister('S', 0xFD)
         self.SetRegister('P', 0x00)
         self.ClearMemory()
+        self.ppu = PPU(self)
+        self.controllers = Controllers(self)
 
     def mapMem(self, address):
         return self.rom.mapMem(self, address)

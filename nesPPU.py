@@ -5,7 +5,7 @@ class PPU():
         self.cpu = cpu
         self.renderer = renderer.Renderer()
         self.memory = [0x00] * 0x4000
-        self.oamMemory = [0x00] * 0x100
+        self.sprMemory = [0x00] * 0x100
 
         # PPU memory addresses
         self.patternTable0  = 0x0000
@@ -70,15 +70,29 @@ class PPU():
             self.flipflop1 = 1
         if addr == self.vramData:
             storAddr = self.latch_lo | (self.latch_hi << 8)
+            self.SetMemory(storAddr, value)
+            if self.GetVWrite() == 1:
+                storAddr += 32
+            else:
+                storAddr += 1
+            self.latch_lo = storAddr & 0xFF
+            self.latch_hi = (storAddr >> 8) & 0xFF
 
         self.registers[addr] = value & 0xFF
         return value & 0xFF
 
+    def SpriteDMA(self, value):
+        for i in range(0, 0x100):
+            self.sprMemory[i] = self.cpu.ReadMemory[(value << 8)+i]
+
+    def GetVWrite(self):
+        return self.GetRegister(self.ctrl1) & (1 << 2)
+
     def GetVBlank(self):
-        return GetRegister(self.status) & (1 << 7)
+        return self.GetRegister(self.status) & (1 << 7)
 
     def GetHit(self):
-        return GetRegister(self.status) & (1 << 6)
+        return self.GetRegister(self.status) & (1 << 6)
 
     def AddressTranslation(self, addr):
         if addr < self.nameTable0:  # mapped by mapper in cart

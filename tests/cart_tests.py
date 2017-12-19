@@ -24,6 +24,7 @@ class TestCartHeaderParsing(unittest.TestCase):
         cpu.LoadRom("../smb1.nes")
         self.assertEqual(cpu.rom.numRomBanks, 2)
         self.assertEqual(cpu.rom.numVromBanks, 1)
+        #print cpu.rom.vromBanks[0]
 
         startAddr = cpu.ReadMemWord(cpu.reset)
         firstByte = cpu.ReadMemory(startAddr)
