@@ -14,8 +14,8 @@ class Memory(object):
             address &= 0x7FF
 
         # handle ppu i/o register mirroring here
-        if address > 0x2007 and address < 0x4000:
-            address = 0x2000 + (address % 8)
+        if address >= 0x2000 and address < 0x4000:
+            address = (address % 8)
             return (None, address)
        
         # handle nametable mirroring here - XXX
@@ -37,9 +37,8 @@ class Memory(object):
         (mem, addr) = self.AddressTranslation(cpu, address)
         
         # Read from PPU registers
-        if address >= 0x2000 and address < 0x2008:
-            address -= 0x2000
-            return cpu.ppu.GetRegister(address)
+        if mem == None:
+            return cpu.ppu.GetRegister(addr)
         
         return mem[addr]
 

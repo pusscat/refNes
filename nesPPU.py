@@ -4,18 +4,21 @@ import renderer
 class PPU():
     def __init__(self, cpu):
         self.cpu = cpu
-        self.renderer = renderer.Renderer()
+        self.renderer = renderer.Renderer(self)
         self.memory = [0x00] * 0x4000
         self.sprMemory = [0x00] * 0x100
+        self.nt = [0x00] * (256*240*2)
 
         self.xlines = 256
         self.ylines = 240
-        self.screen = [0x00] * (self.xlines * self.ylines)
+        self.screen = [0x40] * (self.xlines * self.ylines)
         self.tube_x = 0
         self.tube_y = 0
         self.hblank = 0
         self.vblank = 0
         self.lastBGWrite = 0
+        self.cyclesPerHBlank = 144
+        self.bgIndex = 0x40
 
         # PPU memory addresses
         self.patternTable0  = 0x0000
@@ -26,6 +29,7 @@ class PPU():
         self.nameTable3     = 0x2C00
         self.nameTableEnd   = 0x3000
         self.paletteIndex   = 0x3F00
+        self.paletteBG      = 0x3F10
 
         self.nameTableSize  = 0x0400
 
@@ -107,6 +111,14 @@ class PPU():
     def GetVBlank(self):
         return self.GetRegister(self.status) & (1 << 7)
 
+    def SetVBlank(self):
+        status = self.GetRegister(self.status)
+        self.SetRegister(self.status, status | (1 << 7))
+
+    def ClearVBlank(self):
+        status = self.GetRegister(self.status)
+        self.SetRegister(self.status, status & 0x7F)
+
     def GetHit(self):
         return self.GetRegister(self.status) & (1 << 6)
 
@@ -174,7 +186,7 @@ class PPU():
         (mem, addr) = self.AddressTranslation(address)
         
         if addr >= 0x3F10 and addr < 0x3F20:
-            self.lastBGWrite = addr
+            self.lastBGWrite = value
 
         if addr >= self.nameTable0 and addr < self.nameTableEnd:
             self.MarkDirty(address)
@@ -183,7 +195,22 @@ class PPU():
         return value & 0xFF
 
     def DrawBackground(self):
-        pass
+        q = 0
+        for y in range(0, self.ylines):
+            ntable = self.ReadMemory(self.nameTable0 + y)
+            ry = self.scroll_y + y
+            name_y = ry % self.ylines
+
+            rx = self.scroll_x
+            for x in range(0, self.xlines):
+                name_x = rx % self.xlines
+                c = self.nt[name_x + (256 * name_y) + ((256 * 240) * ntable)]
+                if c&3 != 0:
+                    self.screen[q] = c
+                else:
+                    self.screen[q] = self.bgIndex
+                q += 1
+                rx += 1
 
     def DrawSprites(self):
         if self.GetSprTable() != 0:
@@ -203,7 +230,7 @@ class PPU():
 
             for y in range(sy, sy+8):
                 for x in range(sx, sx+8):
-                    if x > 0 and x < 256 and y > 0 and y < 240:
+                    if x > 0 and x < self.xlines and y > 0 and y < self.ylines:
                         if fx == 0:
                             ho = 7 - (x - sx)
                         else:
@@ -214,12 +241,59 @@ class PPU():
                             vo = 7 - (y - sy)
 
                         addr = tableIndex + (p*0x10) + vo
-                        c  = ((self.GetMemory(addr)>>ho)&1)
-                        c |= ((self.GetMemory(addr+8)>>ho)&1)<<1
+                        c  = ((self.ReadMemory(addr)>>ho)&1)
+                        c |= ((self.ReadMemory(addr+8)>>ho)&1)<<1
                         c |= hi << 2
 
+                        if c & 3 == 0:
+                            dat = 0
+                        else:
+                            dat = self.ReadMemory(self.paletteIndex + c)
+                        
+                        if dat != 0:
+                            if pr == 0:
+                                screen[x+(y*self.xlines)] = dat
+                            else:
+                                if screen[x+(y*self.xlines)] == 0x40:
+                                    screen[x+(y*self.xlines)] = dat
+                    
+
+
     def DrawNametable(nameTable, xTile, yTile):
-        pass
+        if self.GetBGTable != 0:
+            tableIndex = 0x1000
+        else:
+            tableIndex = 0
+
+        for y in range(yTile*8, (yTile*8)+4):
+            for x in range(xTile*8, (xTile*8)+4):
+                name_x = x/8
+                name_7 = y/8
+
+                sx = x%8
+                sy = y%8
+
+                addr = (((name_x%32) + (name_y%32) * 32))
+                addr += nameTable * 0x400
+
+                p = self.ReadMemory(self.nameTable0 + addr)
+
+                cIndex = tableIndex + (p*16) + sy
+                c = (self.ReadMemory(cIndex) >> (7 - sx)) & 1
+                c |= (self.ReadMemory(cIndex+8) >> (7 - sx)) << 1
+
+                name_x = x/32
+                name_y = y/32
+                addr = ((name_x % 8) + ((name_7 % 8) * 8)) + 0x3c0
+                addr += nameTable * 0x400
+
+                p = self.ReadMemory(self.nameTable0 + addr)
+
+                name_x = (x / 16) % 2
+                name_y = (y / 16) % 2
+
+                c |= ((p >> 2 * (name_x + (name_y << 1))) & 3) << 2
+                self.nt[x + (y * self.xlines) + (nameTable * (self.xlines * self.ylines))] = c
 
     def BlankScreen(self):
         self.screen = [0x00] * (self.xlines * self.ylines)
@@ -230,8 +304,8 @@ class PPU():
         else:
             self.DrawBackground()
 
-        if self.GetSprEnable() != 0:
-            self.DrawSprites()
+        #if self.GetSprEnable() != 0:
+        self.DrawSprites()
 
         if self.dirtyVram != 0 and self.GetScreenEnable() != 0:
             self.dirtyVram = 0
@@ -243,23 +317,21 @@ class PPU():
 
     def stepPPU(self):
         # each step draws one pixel
-        self.hblank = 0
-        self.UpdateFrame()
-
         self.renderer.Update(self.screen, self.tube_x, self.tube_y)
         self.tube_x += 1
-        if self.tube_x == 256:
+        if self.tube_x == self.xlines:
             self.tube_x = 0
             self.tube_y += 1
             self.hblank = 1
-        if self.tube_y == 239:
+            #self.renderer.Update(self.screen, self.tube_y)
+        if self.tube_y == self.ylines-1:
             self.tube_y = 0
-            self.vblank = 1
-
+            self.SetVBlank()
 
     def runPPU(self, numCPUCycles):
         # we get to run 3 PPU cycles for every 1 CPU cycle
         # we step the CPU first, then based on how long the 
         # instruction took, we step the PPU 3x that number
+        self.UpdateFrame()
         for i in range(0, numCPUCycles*3):
             self.stepPPU()

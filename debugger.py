@@ -110,6 +110,9 @@ def printHelp():
     print "unasm / u\t\t - show instructions"
     print ""
 
+def printScreen(cpu):
+    print cpu.ppu.screen
+
 def handleCmd(cpu, cmdString):
     cmdList = cmdString.split()
     cmd = cmdList[0]
@@ -132,7 +135,8 @@ def handleCmd(cpu, cmdString):
     if cmd == 'unasm' or cmd == 'u':
         disasmMemory(cpu, cmdList)
 
-
+    if cmd == 'screen':
+        printScreen(cpu)
 
 def debugLoop(cpu):
     cmd = ''

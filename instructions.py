@@ -59,7 +59,8 @@ def GetValue(cpu, instruction):
             # we should NOT add 1 to high order in this case.
         return cpu.ReadMemory(highOrder + lowOrder)
     if operType is 'PCREL':
-        return cpu.ReadRelPC(1) + cpu.GetRegister('PC')
+        pcReg = cpu.GetRegister('PC') + instruction.size
+        return ((cpu.ReadRelPC(1) + pcReg) & 0xFF) + (pcReg & 0xFF00)
     return value
 
 def GetAddress(cpu, instruction):
@@ -142,7 +143,10 @@ def doAslAccu(cpu, instruction):
 
 
 def doBranch(cpu, instruction, flag, value):
-    flagVal = cpu.GetFlag(flag)
+    if cpu.GetFlag(flag) != 0:
+        flagVal = 1
+    else:
+        flagVal = 0
     if flagVal is not value:
         return False
 

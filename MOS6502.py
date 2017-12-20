@@ -230,8 +230,11 @@ class CPU(object):
             return addr
         instruction.execute(self)
         self.cycle += instruction.cycles
+        if self.cycle % 4 == 0:
+            self.controllers.getInput()
+
+        #if self.cycle > self.ppu.cyclesPerHBlank:
         self.ppu.runPPU(self.cycle)
-        self.controllers.getInput()
         self.cycle = 0
 
         return self.GetRegister('PC')
