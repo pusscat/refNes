@@ -47,7 +47,7 @@ class PPU():
         self.ctrl1          = 0
         self.ctrl2          = 1
         self.status         = 2
-        self.sprLatch       = 3     
+        self.sprAddr        = 3     
         self.sprData        = 4
         self.vramScroll     = 5
         self.vramLatch      = 6
@@ -63,24 +63,24 @@ class PPU():
         return self.registers[addr] 
 
     def SetRegister(self, addr, value):
-        if addr == self.sprLatch:
-            self.flipflop1 = 0
+        if addr == self.sprAddr:
+            self.flipflop1 ^= 1
         if addr == self.sprData:
-            newLatch = self.GetRegister(self.sprLatch)+1
-            self.SetRegister(self.sprLatch, newLatch)
+            addr = self.GetRegister(self.sprAddr)
+            self.sprMemory[addr] = value
+            self.SetRegister(self.sprAddr, addr+1)
         if addr == self.vramScroll:
             if self.flipflop0 == 0:
-                if value < 240:
-                    self.scroll_y = value
-            else:
                 self.scroll_x = value
-            self.flipflop0 = 1
+            else:
+                self.scroll_y = value
+            self.flipflop0 ^= 1
         if addr == self.vramLatch:
             if self.flipflop1 == 0:
                 self.latch_lo = value
             else:
                 self.latch_hi = value
-            self.flipflop1 = 1
+            self.flipflop1 ^= 1
         if addr == self.vramData:
             storAddr = self.latch_lo | (self.latch_hi << 8)
             self.SetMemory(storAddr, value)
@@ -121,6 +121,12 @@ class PPU():
 
     def GetSprEnable(self):
         return self.GetRegister(self.ctrl2) & (1 << 4)
+
+    def GetSprTable(self):
+        return self.GetRegister(self.ctrl1) & (1 << 3)
+
+    def GetBGTable(self):
+        return self.GetRegister(self.ctrl1) & (1 << 4)
 
     def AddressTranslation(self, addr):
         if addr < self.nameTable0:  # mapped by mapper in cart
@@ -176,13 +182,43 @@ class PPU():
         mem[addr] = value & 0xFF
         return value & 0xFF
 
-    def drawBackground(self):
+    def DrawBackground(self):
         pass
 
-    def drawSprites(self):
-        pass
+    def DrawSprites(self):
+        if self.GetSprTable() != 0:
+            tableIndex = 0x1000
+        else:
+            tableIndex = 0x0000
 
-    def drawNametable(nameTable, xTile, yTile):
+        for i in range(0, 64):
+            index = i * 4
+            sy = self.sprMemory[index]
+            sx = self.sprMemory[index+3]
+            fy = (self.sprMemory[index+2]>>7)&1
+            fx = (self.sprMemory[index+2]>>6)&1
+            pr = (self.sprMemory[index+2]>>5)&1
+            hi = self.sprMemory[index+2]&3
+            p  = self.sprMemory[index+1]
+
+            for y in range(sy, sy+8):
+                for x in range(sx, sx+8):
+                    if x > 0 and x < 256 and y > 0 and y < 240:
+                        if fx == 0:
+                            ho = 7 - (x - sx)
+                        else:
+                            ho = x-sx
+                        if fy == 0:
+                            vo = y - sy
+                        else:
+                            vo = 7 - (y - sy)
+
+                        addr = tableIndex + (p*0x10) + vo
+                        c  = ((self.GetMemory(addr)>>ho)&1)
+                        c |= ((self.GetMemory(addr+8)>>ho)&1)<<1
+                        c |= hi << 2
+
+    def DrawNametable(nameTable, xTile, yTile):
         pass
 
     def BlankScreen(self):
@@ -192,16 +228,16 @@ class PPU():
         if self.GetScreenEnable() != 0:
             self.BlankScreen()
         else:
-            self.drawBackground()
+            self.DrawBackground()
 
         if self.GetSprEnable() != 0:
-            self.drawSprites()
+            self.DrawSprites()
 
         if self.dirtyVram != 0 and self.GetScreenEnable() != 0:
             self.dirtyVram = 0
             for i in range(0, (32*30*2)):
                 if self.vramWrites[i] != 0:
-                    self.drawNameTable(i/(32*30), i%32, (i%(32*30))/32)
+                    self.DrawNameTable(i/(32*30), i%32, (i%(32*30))/32)
                     self.vramWrites[i] = 0
 
 
@@ -216,7 +252,7 @@ class PPU():
             self.tube_x = 0
             self.tube_y += 1
             self.hblank = 1
-        if self.tube_y == 240:
+        if self.tube_y == 239:
             self.tube_y = 0
             self.vblank = 1
 
