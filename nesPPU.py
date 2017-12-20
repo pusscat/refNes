@@ -1,12 +1,16 @@
 import renderer
 
+
 class PPU():
     def __init__(self, cpu):
         self.cpu = cpu
         self.renderer = renderer.Renderer()
         self.memory = [0x00] * 0x4000
         self.sprMemory = [0x00] * 0x100
-        self.screen = [[0x00] * 320] * 240
+
+        self.xlines = 256
+        self.ylines = 240
+        self.screen = [0x00] * (self.xlines * self.ylines)
         self.tube_x = 0
         self.tube_y = 0
         self.hblank = 0
@@ -24,6 +28,9 @@ class PPU():
         self.paletteIndex   = 0x3F00
 
         self.nameTableSize  = 0x0400
+
+        self.dirtyVram      = 0
+        self.vramWrites     = [0x00] * (32*30*2)
         try:
             self.mirrorType = self.cpu.rom.mirroring # 0 horiz - 1 vert
             self.fourScreen = self.cpu.rom.fourScreen 
@@ -47,7 +54,7 @@ class PPU():
         self.vramData       = 7
 
         self.scanline = 0
-        self.scroll_x = [0x00] * 262
+        self.scroll_x = 0
         self.scroll_y = 0
         self.latch_lo = 0
         self.latch_hi = 0
@@ -64,7 +71,7 @@ class PPU():
         if addr == self.vramScroll:
             if self.flipflop0 == 0:
                 if value < 240:
-                    self.scroll_y[self.scanline] = value
+                    self.scroll_y = value
             else:
                 self.scroll_x = value
             self.flipflop0 = 1
@@ -140,6 +147,19 @@ class PPU():
 
         return (self.memory, addr)
 
+    def MarkDirty(self, address):
+        self.dirtyVram = 1
+        base = (((address % 0x800)/0x400)*(32*30))
+        if (address % 0x400) < 0x3c0:
+            self.vramWrites[base + (address % 0x499)] = 1
+        else:
+            i = (address % 0x400) - 0x3c0
+            x = (i % 8) * 4
+            y = (i / 8) * 4
+            for ys in range(y, y+4):
+                for xs in range(x, x+4):
+                    self.vramWrites[base + xs + (ys * 32)] = 1
+
     def ReadMemory(self, address):
         (mem, addr) = self.AddressTranslation(address)
         return mem[addr]
@@ -150,12 +170,40 @@ class PPU():
         if addr >= 0x3F10 and addr < 0x3F20:
             self.lastBGWrite = addr
 
+        if addr >= self.nameTable0 and addr < self.nameTableEnd:
+            self.MarkDirty(address)
+
         mem[addr] = value & 0xFF
         return value & 0xFF
 
-    def UpdateFrame(self):
-
+    def drawBackground(self):
         pass
+
+    def drawSprites(self):
+        pass
+
+    def drawNametable(nameTable, xTile, yTile):
+        pass
+
+    def BlankScreen(self):
+        self.screen = [0x00] * (self.xlines * self.ylines)
+
+    def UpdateFrame(self):
+        if self.GetScreenEnable() != 0:
+            self.BlankScreen()
+        else:
+            self.drawBackground()
+
+        if self.GetSprEnable() != 0:
+            self.drawSprites()
+
+        if self.dirtyVram != 0 and self.GetScreenEnable() != 0:
+            self.dirtyVram = 0
+            for i in range(0, (32*30*2)):
+                if self.vramWrites[i] != 0:
+                    self.drawNameTable(i/(32*30), i%32, (i%(32*30))/32)
+                    self.vramWrites[i] = 0
+
 
     def stepPPU(self):
         # each step draws one pixel
@@ -164,7 +212,7 @@ class PPU():
 
         self.renderer.Update(self.screen, self.tube_x, self.tube_y)
         self.tube_x += 1
-        if self.tube_x == 320:
+        if self.tube_x == 256:
             self.tube_x = 0
             self.tube_y += 1
             self.hblank = 1

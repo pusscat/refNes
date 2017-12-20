@@ -18,5 +18,6 @@ class Renderer():
 
     # draw a pixelly thing
     def Update(self, screen, x, y):
-        color = self.palette.GetColor(screen[y][x])
+        screenIndex = (y * 256) + x
+        color = self.palette.GetColor(screen[screenIndex])
         
