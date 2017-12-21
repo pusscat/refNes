@@ -324,12 +324,17 @@ class PPU():
             self.tube_x = 0
             self.tube_y += 1
             self.hblank = 1
-            self.renderer.Update(self.screen, self.tube_y)
-        if self.tube_y == self.ylines-1:
-            self.tube_y = 0
+            if self.tube_y <= self.ylines:
+                self.renderer.Update(self.screen, self.tube_y)
+        if self.tube_y == self.ylines:
             self.SetVBlank()
             self.nmi = 1
             self.cpu.nmiFlipFlop = 1
+        if self.tube_y == (self.ylines + 21):
+            self.ClearVBlank()
+            self.nmi = 0
+            self.cpu.nmiFlipFlop = 1
+
 
     def runPPU(self, numCPUCycles):
         # we get to run 3 PPU cycles for every 1 CPU cycle
