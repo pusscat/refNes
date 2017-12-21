@@ -53,11 +53,11 @@ def GetValue(cpu, instruction):
         return cpu.ReadMemory((cpu.ReadMemory(addrPtr+1) << 8) + cpu.ReadMemory(addrPtr))
     if operType is 'INDY':
         highOrder = cpu.ReadMemory(cpu.ReadRelPC(1)+1) << 8
-        lowOrder = cpu.ReadMemory(cpu.ReadRelPC(1)) + cpu.GetRegister('Y')
+        lowOrder = cpu.ReadMemory(cpu.ReadRelPC(1)) + cpu.GetRegister('Y') + cpu.GetFlag('C')
         if lowOrder > 0xFF:
             instruction.addCycles(1)
             # we should NOT add 1 to high order in this case.
-        return cpu.ReadMemory(highOrder + lowOrder)
+        return cpu.ReadMemory(highOrder + (lowOrder & 0xFF))
     if operType is 'PCREL':
         pcReg = cpu.GetRegister('PC') + instruction.size
         return ((cpu.ReadRelPC(1) + pcReg) & 0xFF) + (pcReg & 0xFF00)
@@ -87,11 +87,11 @@ def GetAddress(cpu, instruction):
         return ((cpu.ReadMemory(addrPtr+1) << 8) + cpu.ReadMemory(addrPtr))
     if operType is 'INDY':
         highOrder = cpu.ReadMemory(cpu.ReadRelPC(1)+1) << 8
-        lowOrder = cpu.ReadMemory(cpu.ReadRelPC(1)) + cpu.GetRegister('Y')
+        lowOrder = cpu.ReadMemory(cpu.ReadRelPC(1)) + cpu.GetRegister('Y') + cpu.GetFlag('C')
         if lowOrder > 0xFF:
             instruction.addCycles(1)
             # we should NOT add 1 to high order in this case.
-        return (highOrder + lowOrder)
+        return (highOrder + (lowOrder & 0xFF))
 
     return None
 
@@ -194,6 +194,7 @@ def doBrk(cpu, instruction):
     # jmp to irqBrk vector
     target = cpu.ReadMemWord(cpu.irqBrk)
     cpu.SetPC(target)
+    cpu.paused = True
     return True
 
 def doBvc(cpu, instruction):

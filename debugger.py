@@ -6,7 +6,8 @@ import MOS6502
 from disasm import disasm
 
 breakPoints = []
-
+breakOnWrite = []
+breakOnRead = []
 
 
 def signal_handler(signal, frame):
@@ -36,6 +37,11 @@ def cpuInfo(cpu):
     return lines
 
 
+def showLastFour(cpu):
+    for addr in cpu.lastFour:
+        mem = cpu.GetMemory(addr, 3)
+        print hex(addr) + " " + disasm(mem, 1)[0]
+        
 
 def stepCPU(cpu):
     nextAddr = cpu.step()
@@ -116,6 +122,15 @@ def addBreakPoint(cpu, cmdList):
     global breakPoints
     breakPoints.append(getArg(cpu, cmdList[1]))
 
+def addBreakOnWrite(cpu, cmdList):
+    global breakOnWrite
+    breakOnWrite.append(getArg(cpu, cmdList[1]))
+
+def addBreakOnRead(cpu, cmdList):
+    global breakOnRead
+    breakOnRead.append(getArg(cpu, cmdList[1]))
+
+
 def printHelp():
     print "help / ?\t\t - this message"
     print "step / s\t\t - step one instruction"
@@ -124,13 +139,17 @@ def printHelp():
     print "display / d\t\t - display memory"
     print "unasm / u\t\t - show instructions"
     print "break/ bp\t\t - add breakpoint"
+    print "last / l\t\t - show last 4 instructions executed"
+    print "reset   \t\t - reset the cpu"
+    print "bwrite / bw\t\t - break on write"
+    print "bread / br\t\t - break on read"
     print ""
 
 def printScreen(cpu):
     print cpu.ppu.screen
 
 def handleCmd(cpu, cmdString):
-    global breakPoints
+    global breakPoints, breakOnWrite, breakOnRead
     cmdList = cmdString.split()
     cmd = cmdList[0]
     
@@ -144,10 +163,16 @@ def handleCmd(cpu, cmdString):
         print cpuInfo(cpu)
 
     if cmd == 'go' or cmd == 'g':
-        nextAddr = cpu.runToBreak(breakPoints)
+        nextAddr = cpu.runToBreak(breakPoints, breakOnWrite, breakOnRead)
         mem = cpu.GetMemory(nextAddr, 3)
-        print hex(nextAddr) + " " + disasm(mem, 1)[0]
-    
+        if cpu.pauseReason != None:
+            print cpu.pauseReason
+            cpu.pauseReason = None
+        try:
+            print "\n" + hex(nextAddr) + " " + disasm(mem, 1)[0]
+        except:
+            print hex(nextAddr) + " " + hex(mem[0])
+
     if cmd == 'display' or cmd == 'd':
         displayMemory(cpu, cmdList)
 
@@ -159,6 +184,16 @@ def handleCmd(cpu, cmdString):
 
     if cmd == 'bp' or cmd == 'break':
         addBreakPoint(cpu, cmdList)
+
+    if cmd == 'bw' or cmd == 'bwrite':
+        addBreakOnWrite(cpu, cmdList)
+
+    if cmd == 'l' or cmd == 'last':
+        showLastFour(cpu)
+
+    if cmd == 'reset':
+        cpu.Reset()
+        stepCPU(cpu)
 
 def debugLoop(cpu):
     signal.signal(signal.SIGINT, signal_handler)
