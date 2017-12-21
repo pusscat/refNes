@@ -143,7 +143,7 @@ def doAslAccu(cpu, instruction):
 
 
 def doBranch(cpu, instruction, flag, value):
-    if cpu.GetFlag(flag) is not value:
+    if cpu.GetFlag(flag) != value:
         return False
 
     target = GetValue(cpu, instruction)

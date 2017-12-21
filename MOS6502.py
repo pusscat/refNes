@@ -195,7 +195,7 @@ class CPU(object):
 
     def CreateCarryCondition(self, oldDst, oldSrc, subOp):
         if subOp:
-            return ((~oldSrc + 1) & 0xFF > oldDst)
+            return (((~oldSrc) + 1) > oldDst)
         else:
             return ((oldSrc > 0) and (oldDst > (0xff - oldSrc)))
 
