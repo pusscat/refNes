@@ -437,7 +437,7 @@ def doSbc(cpu, instruction):
 
     newVal = aVal - value - cVal
 
-    cpu.SetRegiser('A', newVal)
+    cpu.SetRegister('A', newVal)
     cpu.UpdateFlags(instruction.flags, aVal, value, newVal, True)
     return False
 
