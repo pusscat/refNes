@@ -148,7 +148,6 @@ def doBranch(cpu, instruction, flag, value):
     else:
         flagVal = 0
     if flagVal is not value:
-        print "BRANCH SKIPPED"
         return False
     
 
