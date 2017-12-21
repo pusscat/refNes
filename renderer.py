@@ -22,8 +22,8 @@ class Renderer():
 
 
     # draw a pixelly thing
-    def Update(self, screen, x, y):
-      #for x in range(0, 240):
+    def Update(self, screen, y):
+      for x in range(0, 256):
         screenIndex = (y * 256) + x
         rgb = self.palette.GetColor(screen[screenIndex])
         color = sdl2.ext.Color(rgb[0], rgb[1], rgb[2])

@@ -234,9 +234,9 @@ class CPU(object):
         if self.cycle % 4 == 0:
             self.controllers.getInput()
 
-        #if self.cycle > self.ppu.cyclesPerHBlank:
-        self.ppu.runPPU(self.cycle)
-        self.cycle = 0
+        if self.cycle > self.ppu.cyclesPerHBlank:
+            self.ppu.runPPU(self.cycle)
+            self.cycle = 0
 
         return self.GetRegister('PC')
 

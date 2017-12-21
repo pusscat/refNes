@@ -316,14 +316,14 @@ class PPU():
 
 
     def stepPPU(self):
-        # each step draws one pixel
-        self.renderer.Update(self.screen, self.tube_x, self.tube_y)
+        # each step draws one pix, but updates only on hblank
+        #self.renderer.Update(self.screen, self.tube_x, self.tube_y)
         self.tube_x += 1
         if self.tube_x == self.xlines:
             self.tube_x = 0
             self.tube_y += 1
             self.hblank = 1
-            #self.renderer.Update(self.screen, self.tube_y)
+            self.renderer.Update(self.screen, self.tube_y)
         if self.tube_y == self.ylines-1:
             self.tube_y = 0
             self.SetVBlank()
