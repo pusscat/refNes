@@ -18,7 +18,6 @@ class Memory(object):
             address = (address % 8)
             return (None, address)
        
-        # handle nametable mirroring here - XXX
 
         # handle all other mapper specific stuff
         if address > 0x7FFF and address < 0x10000:
@@ -46,9 +45,8 @@ class Memory(object):
         (mem, addr) = self.AddressTranslation(cpu, address)
         
         # Write to PPU registers
-        if address >= 0x2000 and address < 0x2008:
-            address -= 0x2000
-            return cpu.ppu.SetRegister(address, value)
+        if mem == None:    
+            return cpu.ppu.SetRegister(addr, value)
 
         if address == cpu.sprDMA:
             return cpu.ppu.SpriteDMA(value)

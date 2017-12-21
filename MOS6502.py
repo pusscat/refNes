@@ -229,6 +229,7 @@ class CPU(object):
             self.SetFlag('B', 1)
             return addr
         instruction.execute(self)
+        self.ppu.ClearVBlank()
         self.cycle += instruction.cycles
         if self.cycle % 4 == 0:
             self.controllers.getInput()

@@ -36,7 +36,7 @@ def GetValue(cpu, instruction):
     if operType is 'ZEROY':
         return cpu.ReadMemory((cpu.ReadRelPC(1) + cpu.GetRegister('Y')) & 0xFF)
     if operType is 'ABS':
-        return (cpu.ReadMemory(cpu.ReadRelPC(2) << 8) + cpu.ReadRelPC(1))
+        return cpu.ReadMemory((cpu.ReadRelPC(2) << 8) + cpu.ReadRelPC(1))
     if operType is 'ABSX': # THIS CAN CROSS PAGE BOUNDARY
         lowOrder = cpu.ReadRelPC(1) + cpu.GetRegister('X')
         hiOrder = cpu.ReadRelPC(2)
@@ -148,7 +148,9 @@ def doBranch(cpu, instruction, flag, value):
     else:
         flagVal = 0
     if flagVal is not value:
+        print "BRANCH SKIPPED"
         return False
+    
 
     target = GetValue(cpu, instruction)
     currPC = cpu.GetRegister('PC')

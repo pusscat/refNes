@@ -64,15 +64,16 @@ class PPU():
         self.latch_hi = 0
 
     def GetRegister(self, addr):
+        #print "Get Register " + hex(addr) + ": " + hex(self.registers[addr])
         return self.registers[addr] 
 
     def SetRegister(self, addr, value):
         if addr == self.sprAddr:
             self.flipflop1 ^= 1
         if addr == self.sprData:
-            addr = self.GetRegister(self.sprAddr)
+            addr = self.registers[self.sprAddr]
             self.sprMemory[addr] = value
-            self.SetRegister(self.sprAddr, addr+1)
+            self.registers[self.sprAddr]  = addr+1
         if addr == self.vramScroll:
             if self.flipflop0 == 0:
                 self.scroll_x = value
@@ -95,6 +96,8 @@ class PPU():
             self.latch_lo = storAddr & 0xFF
             self.latch_hi = (storAddr >> 8) & 0xFF
 
+
+        #print "Set Register " + hex(addr) + ": " + hex(value)
         self.registers[addr] = value & 0xFF
         return value & 0xFF
 
@@ -102,43 +105,40 @@ class PPU():
         for i in range(0, 0x100):
             self.sprMemory[i] = self.cpu.ReadMemory[(value << 8)+i]
 
-    def GetBGColor(self):
-        return self.memory[self.lastBGWrite]
-
     def GetVWrite(self):
-        return self.GetRegister(self.ctrl1) & (1 << 2)
+        return (self.registers[self.status] >> 2) &1
 
     def GetVBlank(self):
-        return self.GetRegister(self.status) & (1 << 7)
+        return (self.registers[self.status] >> 7) &1
 
     def SetVBlank(self):
-        status = self.GetRegister(self.status)
-        self.SetRegister(self.status, status | (1 << 7))
+        status = self.registers[self.status]
+        self.registers[self.status] =  status | 0x80
 
     def ClearVBlank(self):
-        status = self.GetRegister(self.status)
-        self.SetRegister(self.status, status & 0x7F)
+        status = self.registers[self.status]
+        self.registers[self.status] =  status & 0x7F
 
     def GetHit(self):
-        return self.GetRegister(self.status) & (1 << 6)
+        return (self.registers[self.status] >> 6) &1
 
     def GetImgMask(self):
-        return self.GetRegister(self.ctrl2) & (1 << 1)
+        return (self.registers[self.ctrl2] >> 1) &1
 
     def GetSprMask(self):
-        return self.GetRegister(self.ctrl2) & (1 << 2)
+        return (self.registers[self.ctrl2] >> 2) &1
 
     def GetScreenEnable(self):
-        return self.GetRegister(self.ctrl2) & (1 << 3)
+        return (self.registers[self.ctrl2] >> 3) &1
 
     def GetSprEnable(self):
-        return self.GetRegister(self.ctrl2) & (1 << 4)
+        return (self.registers[self.ctrl2] >> 4) &1
 
     def GetSprTable(self):
-        return self.GetRegister(self.ctrl1) & (1 << 3)
+        return (self.registers[self.ctrl1] >> 3) &1
 
     def GetBGTable(self):
-        return self.GetRegister(self.ctrl1) & (1 << 4)
+        return (self.registers[self.ctrl1] >> 4) &1
 
     def AddressTranslation(self, addr):
         if addr < self.nameTable0:  # mapped by mapper in cart
