@@ -130,6 +130,10 @@ def addBreakOnRead(cpu, cmdList):
     global breakOnRead
     breakOnRead.append(getArg(cpu, cmdList[1]))
 
+def setRegister(cpu, cmdList):
+    register = cmdList[1]
+    value = getArg(cpu, cmdList[2])
+    cpu.SetRegister(register, value)
 
 def printHelp():
     print "help / ?\t\t - this message"
@@ -143,7 +147,7 @@ def printHelp():
     print "reset   \t\t - reset the cpu"
     print "bwrite / bw\t\t - break on write"
     print "bread / br\t\t - break on read"
-    print ""
+    print "reg / r\t\t - set register value"
 
 def printScreen(cpu):
     print cpu.ppu.screen
@@ -194,6 +198,10 @@ def handleCmd(cpu, cmdString):
     if cmd == 'reset':
         cpu.Reset()
         stepCPU(cpu)
+
+    if cmd == 'reg' or cmd == 'r':
+        if len(cmdList) == 3:
+            setRegister(cpu, cmdList)
 
 def debugLoop(cpu):
     signal.signal(signal.SIGINT, signal_handler)
