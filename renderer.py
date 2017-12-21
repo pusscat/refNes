@@ -29,4 +29,4 @@ class Renderer():
         color = sdl2.ext.Color(rgb[0], rgb[1], rgb[2])
         area = (x*self.scale, y*self.scale, self.scale, self.scale)
         sdl2.ext.fill(self.surface, color, area)
-        self.window.refresh()
+      self.window.refresh()
