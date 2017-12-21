@@ -209,7 +209,7 @@ class CPU(object):
                     'N':7}
         flagsReg = self.GetRegister('P')
         flagIndex = flags[flagName]
-        return ((flagsReg & (1 << flagIndex)) != 0)
+        return (flagsReg >> flagIndex) & 1
 
 
     def incPC(self, size):

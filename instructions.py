@@ -99,7 +99,7 @@ def GetAddress(cpu, instruction):
 def doAdc(cpu, instruction):
     value = GetValue(cpu, instruction)
     accuVal = cpu.GetRegister('A')
-    carryVal = 1 if cpu.GetFlag('C') else 0
+    carryVal = cpu.GetFlag('C')
 
     newVal = accuVal + value + carryVal
 
@@ -143,13 +143,8 @@ def doAslAccu(cpu, instruction):
 
 
 def doBranch(cpu, instruction, flag, value):
-    if cpu.GetFlag(flag) != 0:
-        flagVal = 1
-    else:
-        flagVal = 0
-    if flagVal is not value:
+    if cpu.GetFlag(flag) is not value:
         return False
-    
 
     target = GetValue(cpu, instruction)
     currPC = cpu.GetRegister('PC')
