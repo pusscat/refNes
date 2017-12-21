@@ -305,8 +305,8 @@ class PPU():
         else:
             self.DrawBackground()
 
-        #if self.GetSprEnable() != 0:
-        self.DrawSprites()
+        if self.GetSprEnable() != 0:
+            self.DrawSprites()
 
         if self.dirtyVram != 0 and self.GetScreenEnable() != 0:
             self.dirtyVram = 0
