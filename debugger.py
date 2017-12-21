@@ -1,10 +1,19 @@
 import sys
 import struct
+import signal
 
 import MOS6502
 from disasm import disasm
 
 breakPoints = []
+
+
+
+def signal_handler(signal, frame):
+    global cpu
+
+    cpu.paused = True
+
 
 def cpuInfo(cpu):
     lines = ''
@@ -152,6 +161,7 @@ def handleCmd(cpu, cmdString):
         addBreakPoint(cpu, cmdList)
 
 def debugLoop(cpu):
+    signal.signal(signal.SIGINT, signal_handler)
     cmd = ''
     while (1):
         sys.stdout.write("> ")

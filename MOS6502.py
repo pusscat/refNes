@@ -262,5 +262,6 @@ class CPU(object):
                 return nextInst
             # sleep the right amount here after CPU and PPU are stepped
 
+        return nextInst
 
                     
