@@ -292,7 +292,7 @@ def doInc(cpu, instruction):
     addrVal = GetAddress(cpu, instruction)
     memVal = cpu.ReadMemory(addrVal)
 
-    newVal = memVal + 1
+    newVal = (memVal + 1) & 0xFF
     cpu.SetMemory(addrVal, newVal)
     cpu.UpdateFlags(instruction.flags, memVal, memVal, newVal, False)
     return False 
@@ -300,13 +300,13 @@ def doInc(cpu, instruction):
 def doInx(cpu, instruction):
     xVal = cpu.GetRegister('X')
     cpu.SetRegister('X', xVal+1)
-    cpu.UpdateFlags(instruction.flags, xVal, xVal, xVal+1, False)
+    cpu.UpdateFlags(instruction.flags, xVal, xVal, (xVal+1)&0xFF, False)
     return False
 
 def doIny(cpu, instruction):
     yVal = cpu.GetRegister('Y')
     cpu.SetRegister('Y', yVal+1)
-    cpu.UpdateFlags(instruction.flags, yVal, yVal, yVal+1, False)
+    cpu.UpdateFlags(instruction.flags, yVal, yVal, (yVal+1)&0xFF, False)
     return False
 
 def doJmp(cpu, instruction):
