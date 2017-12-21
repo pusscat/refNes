@@ -225,6 +225,10 @@ def doCmp(cpu, instruction):
     
     newVal = accuVal - value
     # Dont set a register in compare 
+    if accuVal >= value:
+        cpu.SetFlag('C', 1)
+    else:
+        cpu.SetFlag('C', 0)
     cpu.UpdateFlags(instruction.flags, accuVal, value, newVal, True)
     return False
 
@@ -234,6 +238,10 @@ def doCpx(cpu, instruction):
 
     newVal = xVal - value
     # Dont set a register in compare 
+    if xVal >= value:
+        cpu.SetFlag('C', 1)
+    else:
+        cpu.SetFlag('C', 0)
     cpu.UpdateFlags(instruction.flags, xVal, value, newVal, True)
     return False
 
@@ -243,6 +251,10 @@ def doCpy(cpu, instruction):
 
     newVal = yVal - value
     # Dont set a register in compare 
+    if yVal >= value:
+        cpu.SetFlag('C', 1)
+    else:
+        cpu.SetFlag('C', 0)
     cpu.UpdateFlags(instruction.flags, yVal, value, newVal, True)
     return False
 
@@ -252,19 +264,19 @@ def doDec(cpu, instruction):
 
     newVal = memVal - 1
     cpu.SetMemory(addrVal, newVal)
-    cpu.UpdateFlags(instruction.flags, memVal, memVal, newVal, True)
+    cpu.UpdateFlags(instruction.flags, memVal, 1, newVal, True)
     return False
 
 def doDex(cpu, instruction):
     xVal = cpu.GetRegister('X')
     cpu.SetRegister('X', xVal-1)
-    cpu.UpdateFlags(instruction.flags, xVal, xVal, xVal-1, True)
+    cpu.UpdateFlags(instruction.flags, xVal, 1, xVal-1, True)
     return False
 
 def doDey(cpu, instruction):
     yVal = cpu.GetRegister('Y')
     cpu.SetRegister('Y', yVal-1)
-    cpu.UpdateFlags(instruction.flags, yVal, yVal, yVal-1, True)
+    cpu.UpdateFlags(instruction.flags, yVal, 1, yVal-1, True)
     return False
 
 def doEor(cpu, instruction):
@@ -537,9 +549,9 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'CLD': [],
             'CLI': [],
             'CLV': [],
-            'CMP': ['N', 'Z', 'C'],
-            'CPX': ['N', 'Z', 'C'],
-            'CPY': ['N', 'Z', 'C'],
+            'CMP': ['N', 'Z'],
+            'CPX': ['N', 'Z'],
+            'CPY': ['N', 'Z'],
             'DEC': ['N', 'Z'],
             'DEX': ['N', 'Z'],
             'DEY': ['N', 'Z'],
