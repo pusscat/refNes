@@ -171,8 +171,8 @@ def doBit(cpu, instruction):
     value = GetValue(cpu, instruction)
     accuVal = cpu.GetRegister('A')
 
-    cpu.SetFlag('N', (value & (1 << 7)) >> 7)
-    cpu.SetFlag('V', (value & (1 << 6)) >> 6)
+    cpu.SetFlag('N', (value>>7)&1)
+    cpu.SetFlag('V', (value>>6)&1)
     cpu.SetFlag('Z', 1 if value & accuVal != 0 else 0)
     return False
 
@@ -615,8 +615,8 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x90: Instruction('BCC', doBcc, 'PCREL', 2, 2),
                 0xB0: Instruction('BCS', doBcs, 'PCREL', 2, 2),
                 0xF0: Instruction('BEQ', doBeq, 'PCREL', 2, 2),
-                0x24: Instruction('BIT', doBeq, 'ZERO', 2, 3),
-                0x2C: Instruction('BIT', doBeq, 'ABS', 3, 4),
+                0x24: Instruction('BIT', doBit, 'ZERO', 2, 3),
+                0x2C: Instruction('BIT', doBit, 'ABS', 3, 4),
                 0x30: Instruction('BMI', doBmi, 'PCREL', 2, 2),
                 0xD0: Instruction('BNE', doBne, 'PCREL', 2, 2),
                 0x10: Instruction('BPL', doBpl, 'PCREL', 2, 2),
