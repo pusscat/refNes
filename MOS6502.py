@@ -47,7 +47,7 @@ class CPU(object):
         self.regs['S'].SetValue(0)
 
         self.cycle = 0
-        self.nmiFlipflop = 0
+        self.nmiFlipFlop = 0
 
         self.stackBase  = 0x0100
         self.ppuMem     = 0x2000
@@ -250,7 +250,7 @@ class CPU(object):
             self.cycle = 0
             if self.nmiFlipFlop == 1:
                 self.nmiFlipFlop = 0
-                if self.ppu.nmi = 1:
+                if self.ppu.nmi == 1:
                    self.HandleNMI()
 
         return self.GetRegister('PC')
