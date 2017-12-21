@@ -33,6 +33,7 @@ class PPU():
 
         self.nameTableSize  = 0x0400
 
+        self.nmi            = 0
         self.dirtyVram      = 0
         self.vramWrites     = [0x00] * (32*30*2)
         try:
@@ -327,6 +328,8 @@ class PPU():
         if self.tube_y == self.ylines-1:
             self.tube_y = 0
             self.SetVBlank()
+            self.nmi = 1
+            self.cpu.nmiFlipFlop = 1
 
     def runPPU(self, numCPUCycles):
         # we get to run 3 PPU cycles for every 1 CPU cycle
