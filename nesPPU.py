@@ -326,7 +326,7 @@ class PPU():
             self.hblank = 1
             if self.tube_y <= self.ylines:
                 self.renderer.Update(self.screen, self.tube_y)
-        if self.tube_y == self.ylines:
+        if self.tube_y == self.ylines-1:
             self.SetVBlank()
             self.nmi = 1
             self.cpu.nmiFlipFlop = 1
