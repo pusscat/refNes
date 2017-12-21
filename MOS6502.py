@@ -226,7 +226,7 @@ class CPU(object):
         self.SetFlag('I', 1)
         
         # jmp to nmi vector
-        target = cpu.ReadMemWord(cpu.nmi)
+        target = self.ReadMemWord(self.nmi)
         self.SetPC(target)
         return True
 
