@@ -38,13 +38,13 @@ def GetValue(cpu, instruction):
     if operType is 'ABS':
         return cpu.ReadMemory((cpu.ReadRelPC(2) << 8) + cpu.ReadRelPC(1))
     if operType is 'ABSX': # THIS CAN CROSS PAGE BOUNDARY
-        lowOrder = cpu.ReadRelPC(1) + cpu.GetRegister('X')
+        lowOrder = cpu.ReadRelPC(1) + cpu.GetRegister('X') + cpu.GetFlag('C')
         hiOrder = cpu.ReadRelPC(2)
         if lowOrder > 0xFF:
             instruction.addCycles(1)
         return cpu.ReadMemory((hiOrder << 8) + lowOrder)
     if operType is 'ABSY':
-        lowOrder = cpu.ReadRelPC(1) + cpu.GetRegister('Y')
+        lowOrder = cpu.ReadRelPC(1) + cpu.GetRegister('Y') + cpu.GetFlag('C')
         if lowOrder > 0xFF:
             instruction.addCycles(1)
         return cpu.ReadMemory((cpu.ReadRelPC(2) << 8) + lowOrder)
@@ -72,9 +72,9 @@ def GetAddress(cpu, instruction):
     if operType is 'ABS':
         return (cpu.ReadRelPC(2) << 8) + cpu.ReadRelPC(1)
     if operType is 'ABSX':
-        return (cpu.ReadRelPC(2) << 8) + cpu.ReadRelPC(1) + cpu.GetRegister('X')
+        return (cpu.ReadRelPC(2) << 8) + cpu.ReadRelPC(1) + cpu.GetRegister('X') + cpu.GetFlag('C')
     if operType is 'ABSY':
-        return (cpu.ReadRelPC(2) << 8) + cpu.ReadRelPC(1) + cpu.GetRegister('Y')
+        return (cpu.ReadRelPC(2) << 8) + cpu.ReadRelPC(1) + cpu.GetRegister('Y') + cpu.GetFlag('C')
     if operType is 'IND':
         addr = (cpu.ReadRelPC(2) << 8) + cpu.ReadRelPC(1)
         lowOrder = cpu.ReadMemory(addr)
@@ -83,7 +83,7 @@ def GetAddress(cpu, instruction):
         highOrder = cpu.ReadMemory(addr+1) << 8
         return  cpu.ReadMemory(highOrder + lowOrder)
     if operType is 'INDX':
-        addrPtr = ((cpu.ReadRelPC(1) + cpu.GetRegister('X')) & 0xFF)
+        addrPtr = ((cpu.ReadRelPC(1) + cpu.GetRegister('X') + cpu.GetFlag('C')) & 0xFF)
         return ((cpu.ReadMemory(addrPtr+1) << 8) + cpu.ReadMemory(addrPtr))
     if operType is 'INDY':
         highOrder = cpu.ReadMemory(cpu.ReadRelPC(1)+1) << 8
