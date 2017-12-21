@@ -371,7 +371,7 @@ def doPhp(cpu, instruction):
 
 def doPla(cpu, instruction):
     aVal = cpu.PopByte()
-    cpu.setRegister('A', aVal)
+    cpu.SetRegister('A', aVal)
     cpu.UpdateFlags(instruction.flags, aVal, aVal, aVal, False)
     return False
 

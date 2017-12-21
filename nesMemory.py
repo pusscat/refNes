@@ -49,7 +49,7 @@ class Memory(object):
             return cpu.ppu.SetRegister(addr, value)
 
         if address == cpu.sprDMA:
-            return cpu.ppu.SpriteDMA(value)
+            cpu.ppu.SpriteDMA(value)
 
         mem[addr] = value & 0xFF
         return value & 0xFF

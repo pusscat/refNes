@@ -104,7 +104,7 @@ class PPU():
 
     def SpriteDMA(self, value):
         for i in range(0, 0x100):
-            self.sprMemory[i] = self.cpu.ReadMemory[(value << 8)+i]
+            self.sprMemory[i] = self.cpu.ReadMemory((value << 8)+i)
 
     def GetVWrite(self):
         return (self.registers[self.status] >> 2) &1
@@ -324,13 +324,14 @@ class PPU():
             self.tube_x = 0
             self.tube_y += 1
             self.hblank = 1
-            if self.tube_y <= self.ylines:
+            if self.tube_y < self.ylines:
                 self.renderer.Update(self.screen, self.tube_y)
-        if self.tube_y == self.ylines-1:
+        if self.tube_y == self.ylines:
             self.SetVBlank()
             self.nmi = 1
             self.cpu.nmiFlipFlop = 1
         if self.tube_y == (self.ylines + 21):
+            self.tube_y = 0
             self.ClearVBlank()
             self.nmi = 0
             self.cpu.nmiFlipFlop = 1
