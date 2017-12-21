@@ -254,9 +254,13 @@ class CPU(object):
 
         return self.GetRegister('PC')
 
-    def runToBreak(self):
+    def runToBreak(self, breaks):
+        self.paused = False
         while self.paused == False:
-            self.step()
+            nextInst = self.step()
+            if nextInst in breaks:
+                return nextInst
             # sleep the right amount here after CPU and PPU are stepped
+
 
                     

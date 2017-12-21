@@ -4,6 +4,8 @@ import struct
 import MOS6502
 from disasm import disasm
 
+breakPoints = []
+
 def cpuInfo(cpu):
     lines = ''
     lines +=  "A: " + hex(cpu.GetRegister('A')) + "\t"
@@ -101,6 +103,10 @@ def disasmMemory(cpu, cmdList):
     for line in lines:
         print line
 
+def addBreakPoint(cpu, cmdList):
+    global breakPoints
+    breakPoints.append(getArg(cpu, cmdList[1]))
+
 def printHelp():
     print "help / ?\t\t - this message"
     print "step / s\t\t - step one instruction"
@@ -108,12 +114,14 @@ def printHelp():
     print "go / g  \t\t - run the program until break"
     print "display / d\t\t - display memory"
     print "unasm / u\t\t - show instructions"
+    print "break/ bp\t\t - add breakpoint"
     print ""
 
 def printScreen(cpu):
     print cpu.ppu.screen
 
 def handleCmd(cpu, cmdString):
+    global breakPoints
     cmdList = cmdString.split()
     cmd = cmdList[0]
     
@@ -127,8 +135,10 @@ def handleCmd(cpu, cmdString):
         print cpuInfo(cpu)
 
     if cmd == 'go' or cmd == 'g':
-        cpu.runToBreak()
-
+        nextAddr = cpu.runToBreak(breakPoints)
+        mem = cpu.GetMemory(nextAddr, 3)
+        print hex(nextAddr) + " " + disasm(mem, 1)[0]
+    
     if cmd == 'display' or cmd == 'd':
         displayMemory(cpu, cmdList)
 
@@ -137,6 +147,9 @@ def handleCmd(cpu, cmdString):
 
     if cmd == 'screen':
         printScreen(cpu)
+
+    if cmd == 'bp' or cmd == 'break':
+        addBreakPoint(cpu, cmdList)
 
 def debugLoop(cpu):
     cmd = ''
