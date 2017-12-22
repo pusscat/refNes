@@ -99,6 +99,7 @@ class PPU():
 
 
         #print "Set Register " + hex(addr) + ": " + hex(value)
+        self.registers[self.status] = (self.registers[self.status] & 0xe0) | (value & 0x1F)
         self.registers[addr] = value & 0xFF
         return value & 0xFF
 
@@ -107,10 +108,10 @@ class PPU():
             self.sprMemory[i] = self.cpu.ReadMemory((value << 8)+i)
 
     def GetVWrite(self):
-        return (self.registers[self.status] >> 2) &1
+        return (self.registers[self.status] >> 2) & 1
 
     def GetVBlank(self):
-        return (self.registers[self.status] >> 7) &1
+        return (self.registers[self.status] >> 7) & 1
 
     def SetVBlank(self):
         status = self.registers[self.status]
@@ -119,6 +120,9 @@ class PPU():
     def ClearVBlank(self):
         status = self.registers[self.status]
         self.registers[self.status] =  status & 0x7F
+
+    def GetNMIMask(self):
+        return (self.registers[self.ctrl1] >> 7) & 1
 
     def GetHit(self):
         return (self.registers[self.status] >> 6) &1
@@ -328,8 +332,9 @@ class PPU():
                 self.renderer.Update(self.screen, self.tube_y)
         if self.tube_y == self.ylines:
             self.SetVBlank()
-            self.nmi = 1
-            self.cpu.nmiFlipFlop = 1
+            if self.GetNMIMask() == 1:
+                self.nmi = 1
+                self.cpu.nmiFlipFlop = 1
         if self.tube_y == (self.ylines + 21):
             self.tube_y = 0
             self.ClearVBlank()

@@ -1,14 +1,21 @@
 # refNes: NES reference implementation in python2
 
-TODOs:
+to run:
 
-- [] finish instructions
+python debugger.py <rom path>
+
+then type 'g'
+'?' will show you debugger commands
+
+Todo:
+- [X] finish instructions
 - [] unit tests
-- [] abstract out memory from cpu
-- [] abstract out mappers from memory
-- [] create the cartridge rom parser/loader
+- [X] abstract out memory from cpu
+- [X] abstract out mappers from memory
+- [X] create the cartridge rom parser/loader
 - [] create the PPU
 - [] create the APU
+- [] speed up cpu and ppu
 - [] sort out instruction timing
 
 ## Supported Platforms

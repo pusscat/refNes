@@ -73,6 +73,11 @@ class CPU(object):
         self.ppu = None
         self.controllers = None
         self.paused = False
+        self.pauseReason = None
+
+        self.lastFour = [0x00] * 4
+        self.bwrites = []
+        self.breads = []
 
     def ClearMemory(self):
         self.memory.ClearMemory()
@@ -98,6 +103,9 @@ class CPU(object):
         return self.rom
 
     def ReadMemory(self, address): # always read 1 byte
+        if address in self.breads:
+            self.paused = True
+            self.pauseReason = 'Read at ' + hex(address)
         return self.memory.ReadMemory(self, address)
 
     def ReadVMemory(self, address):
@@ -113,6 +121,9 @@ class CPU(object):
 
     def SetMemory(self, address, value): # always write 1 byte
         #self.memory[address] = value & 0xFF
+        if address in self.bwrites:
+            self.paused = True
+            self.pauseReason = 'Write at ' + hex(address)
         return self.memory.SetMemory(self, address, value)
 
     def initMemory(self, address, values): # write 1 at a time
@@ -184,7 +195,7 @@ class CPU(object):
 
     def CreateCarryCondition(self, oldDst, oldSrc, subOp):
         if subOp:
-            return ((~oldSrc + 1) & 0xFF > oldDst)
+            return (((~oldSrc) + 1) > oldDst)
         else:
             return ((oldSrc > 0) and (oldDst > (0xff - oldSrc)))
 
@@ -237,9 +248,11 @@ class CPU(object):
             instruction = instructions.instructions[opCode]
         except:
             print "Bad Instruction: " + hex(opCode) + " @ " + hex(addr)
-            self.SetFlag('B', 1)
+            self.paused = True
             return addr
         instruction.execute(self)
+        self.lastFour.pop(0)
+        self.lastFour.append(addr)
         self.cycle += instruction.cycles
         if self.cycle % 4 == 0:
             self.controllers.getInput()
@@ -254,13 +267,16 @@ class CPU(object):
 
         return self.GetRegister('PC')
 
-    def runToBreak(self, breaks):
+    def runToBreak(self, breaks, bwrites, breads):
         self.paused = False
+        self.bwrites = bwrites
+        self.breads = breads
         while self.paused == False:
             nextInst = self.step()
             if nextInst in breaks:
                 return nextInst
             # sleep the right amount here after CPU and PPU are stepped
 
+        return nextInst
 
                     
