@@ -1,3 +1,4 @@
 *.pyc
 nesMappers/*.pyc
 *.nes
+*~
