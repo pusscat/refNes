@@ -232,8 +232,9 @@ class CPU(object):
         self.cycle += cycles
 
     def HandleNMI(self):
-        self.PushWord(self.GetRegister('PC')+2)
-        self.PushByte(self.GetRegister('S'))
+        print "NMI HANDLER"
+        self.PushWord(self.GetRegister('PC'))
+        self.PushByte(self.GetRegister('P'))
         self.SetFlag('I', 1)
         
         # jmp to nmi vector
