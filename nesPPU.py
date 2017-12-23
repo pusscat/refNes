@@ -35,7 +35,7 @@ class PPU():
 
         self.nmi            = 0
         self.dirtyVram      = 0
-        self.vramWrites     = [0x00] * (32*30*2)
+        self.vramWrites     = [0x00] * (32*30*4)
         try:
             self.mirrorType = self.cpu.rom.mirroring # 0 horiz - 1 vert
             self.fourScreen = self.cpu.rom.fourScreen 
@@ -88,7 +88,7 @@ class PPU():
                 self.latch_hi = value
             self.flipflop1 ^= 1
         if addr == self.vramData:
-            storAddr = self.latch_lo | (self.latch_hi << 8)
+            storAddr = self.latch_lo + (self.latch_hi << 8)
             self.SetMemory(storAddr, value)
             if self.GetVWrite() == 1:
                 storAddr += 32
@@ -108,7 +108,7 @@ class PPU():
             self.sprMemory[i] = self.cpu.ReadMemory((value << 8)+i)
 
     def GetVWrite(self):
-        return (self.registers[self.status] >> 2) & 1
+        return (self.registers[self.ctrl1] >> 2) & 1
 
     def GetVBlank(self):
         return (self.registers[self.status] >> 7) & 1
@@ -200,6 +200,8 @@ class PPU():
         return value & 0xFF
 
     def DrawBackground(self):
+        return 
+
         q = 0
         for y in range(0, self.ylines):
             ntable = self.ReadMemory(self.nameTable0 + y)
@@ -207,9 +209,10 @@ class PPU():
             name_y = ry % self.ylines
 
             rx = self.scroll_x
+            nnot = (rx/256)&1
             for x in range(0, self.xlines):
                 name_x = rx % self.xlines
-                c = self.nt[name_x + (256 * name_y) + ((256 * 240) * ntable)]
+                c = self.nt[name_x + (256 * name_y) + ((256 * 240) * (ntable^nnot))]
                 if c&3 != 0:
                     self.screen[q] = c
                 else:
