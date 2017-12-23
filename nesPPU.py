@@ -1,5 +1,8 @@
-import renderer
+import sys
+import traceback
+import code
 
+import renderer
 
 class PPU():
     def __init__(self, cpu):
@@ -69,8 +72,8 @@ class PPU():
         return self.registers[addr] 
 
     def SetRegister(self, addr, value):
-        if addr == self.sprAddr:
-            self.flipflop1 ^= 1
+        #if addr == self.sprAddr:
+            #self.flipflop1 ^= 1
         if addr == self.sprData:
             addr = self.registers[self.sprAddr]
             self.sprMemory[addr] = value
