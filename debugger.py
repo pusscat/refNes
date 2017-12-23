@@ -4,6 +4,9 @@ Debugger: demonstrates the refNes core. Helpful in testing.
 
 import sys
 import signal
+import traceback
+import code
+
 
 import MOS6502
 from disasm import disasm
@@ -199,8 +202,13 @@ def handle_cmd(cpu, cmd_string):
         print cpu_info(cpu)
 
     if cmd == 'go' or cmd == 'g':
-        next_addr = cpu.runToBreak(BREAKPOINTS, BREAKONWRITE, BREAKONREAD)
+        try:
+            next_addr = cpu.runToBreak(BREAKPOINTS, BREAKONWRITE, BREAKONREAD)
+        except:
+            traceback.print_exc(file=sys.stdout)
+            code.interact(local=locals())
         mem = cpu.GetMemory(next_addr, 3)
+
         if cpu.pauseReason != None:
             print cpu.pauseReason
             cpu.pauseReason = None
