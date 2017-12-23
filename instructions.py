@@ -62,10 +62,10 @@ def GetValue(cpu, instruction):
         pcReg = cpu.GetRegister('PC') + instruction.size
         # DO NOT & lo with 0xFF if pos - this can traverse page boundaries
         offset = cpu.ReadRelPC(1)
-        if offset & 0x80:
-            return ((offset + (pcReg & 0xFF)) & 0xFF) + (pcReg & 0xFF00)
+        if offset < 0x80:
+            return pcReg + offset
         else:
-            return (offset + pcReg)
+            return pcReg + offset - 0x100
     return value
 
 def GetAddress(cpu, instruction):
