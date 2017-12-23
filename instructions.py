@@ -368,7 +368,7 @@ def doOra(cpu, instruction):
     aVal = cpu.GetRegister('A')
 
     newVal = aVal | value
-
+    cpu.SetRegister('A', newVal)
     cpu.UpdateFlags(instruction.flags, aVal, value, newVal, False)
     return False
 
