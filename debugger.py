@@ -1,6 +1,9 @@
 import sys
 import struct
 import signal
+import traceback
+import code
+
 
 import MOS6502
 from disasm import disasm
@@ -167,7 +170,11 @@ def handleCmd(cpu, cmdString):
         print cpuInfo(cpu)
 
     if cmd == 'go' or cmd == 'g':
-        nextAddr = cpu.runToBreak(breakPoints, breakOnWrite, breakOnRead)
+        try:
+            nextAddr = cpu.runToBreak(breakPoints, breakOnWrite, breakOnRead)
+        except:
+            traceback.print_exc(file=sys.stdout)
+            code.interact(local=locals())
         mem = cpu.GetMemory(nextAddr, 3)
         if cpu.pauseReason != None:
             print cpu.pauseReason
