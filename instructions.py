@@ -125,7 +125,7 @@ def doAnd(cpu, instruction):
     return False
 
 def doAsl(cpu, instruction):
-    addrVal = GetAddress(cpu, instruction)
+    address = GetAddress(cpu, instruction)
     memVal = cpu.ReadMemory(address)
 
     newVal = memVal << 1
