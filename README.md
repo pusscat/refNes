@@ -1,13 +1,15 @@
 # refNes: NES reference implementation in python2
 
-to run:
+To run:
 
-python debugger.py <rom path>
+`python debugger.py <rom path>`
 
 then type 'g'
+
 '?' will show you debugger commands
 
 Todo:
+
 - [X] finish instructions
 - [] unit tests
 - [X] abstract out memory from cpu
@@ -23,6 +25,7 @@ Todo:
 Tested with:
 
 - Python 2.7.10 on macOS 10.13.2
+- Python 2.7.14 on macOS 10.13.2
 
 ## Installing Dependencies
 
