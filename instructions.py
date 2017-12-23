@@ -131,7 +131,9 @@ def doAsl(cpu, instruction):
     newVal = memVal << 1
 
     if newVal > 0xFF:
-        cpu.SetFlag('C')
+        cpu.SetFlag('C', 1)
+    else:
+        cpu.SetFlag('C', 0)
     cpu.SetMemory(address, newVal)
     cpu.UpdateFlags(instruction.flags, memVal, memVal, newVal, False)
     return False
@@ -142,7 +144,9 @@ def doAslAccu(cpu, instruction):
     newVal = accuVal << 1
 
     if newVal > 0xFF:
-       cpu.SetFlag('C')
+        cpu.SetFlag('C', 1)
+    else:
+        cpu.SetFlag('C', 0)
 
     cpu.SetRegister('A', newVal)
     cpu.UpdateFlags(instruction.flags, accuVal, accuVal, newVal, False)
@@ -639,6 +643,7 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xD5: Instruction('CMP', doCmp, 'ZEROX', 2, 4),
                 0xCD: Instruction('CMP', doCmp, 'ABS', 3, 4),
                 0xDD: Instruction('CMP', doCmp, 'ABSX', 3, 4),
+                0xD9: Instruction('CMP', doCmp, 'ABSY', 3, 4),
                 0xC1: Instruction('CMP', doCmp, 'INDX', 2, 6),
                 0xD1: Instruction('CMP', doCmp, 'INDY', 2, 5),
                 0xE0: Instruction('CPX', doCpx, 'IMM', 2, 2),
