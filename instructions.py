@@ -60,8 +60,12 @@ def GetValue(cpu, instruction):
         return cpu.ReadMemory(highOrder + (lowOrder & 0xFF))
     if operType is 'PCREL':
         pcReg = cpu.GetRegister('PC') + instruction.size
-        # DO NOT & lo with 0xFF - this can traverse page boundaries
-        return (cpu.ReadRelPC(1) + pcReg) + (pcReg & 0xFF00)
+        # DO NOT & lo with 0xFF if pos - this can traverse page boundaries
+        offset = cpu.ReadRelPC(1)
+        if offset & 0x80:
+            return ((offset + (pcReg & 0xFF)) & 0xFF) + (pcReg & 0xFF00)
+        else:
+            return (offset + pcReg)
     return value
 
 def GetAddress(cpu, instruction):
