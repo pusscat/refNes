@@ -531,7 +531,7 @@ def doTxs(cpu, instruction):
 
 def doTya(cpu, instruction):
     yVal = cpu.GetRegister('Y')
-    cpu.SetRegister('A', xVal)
+    cpu.SetRegister('A', yVal)
 
     cpu.UpdateFlags(instruction.flags, yVal, yVal, yVal, False)
     return False
