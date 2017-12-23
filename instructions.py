@@ -85,8 +85,10 @@ def GetAddress(cpu, instruction):
         lowOrder = cpu.ReadMemory(addr)
         if (addr & 0xFF) == 0xFF:
             addr = addr & 0xFF00 # DO NOT WALK PAGE BOUNDARIES
-        highOrder = cpu.ReadMemory(addr+1) << 8
-        return  cpu.ReadMemory(highOrder + lowOrder)
+        else:
+            addr += 1
+        highOrder = cpu.ReadMemory(addr) << 8
+        return  highOrder + lowOrder
     if operType is 'INDX':
         addrPtr = ((cpu.ReadRelPC(1) + cpu.GetRegister('X') + cpu.GetFlag('C')) & 0xFF)
         return ((cpu.ReadMemory(addrPtr+1) << 8) + cpu.ReadMemory(addrPtr))
@@ -321,7 +323,7 @@ def doJmp(cpu, instruction):
 
 def doJsr(cpu, instruction):
     addr = GetAddress(cpu, instruction)
-    cpu.PushWord(cpu.GetRegister('PC') + instruction.size)
+    cpu.PushWord(cpu.GetRegister('PC') + instruction.size - 1)
     cpu.SetPC(addr)
     return True # PC changed by this instruction
 
@@ -445,7 +447,7 @@ def doRti(cpu, instruction):
     return True
 
 def doRts(cpu, instruction):
-    cpu.SetPC(cpu.PopWord())
+    cpu.SetPC(cpu.PopWord()+1)
     return True
 
 def doSbc(cpu, instruction):
