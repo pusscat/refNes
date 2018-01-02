@@ -1,4 +1,5 @@
 *.pyc
-nesMappers/*.pyc
 *.nes
 *~
+.vscode
+.python-version
