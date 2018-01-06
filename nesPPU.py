@@ -108,7 +108,7 @@ class PPU():
 
     def SpriteDMA(self, value):
         for i in range(0, 0x100):
-            self.sprMemory[i] = self.cpu.ReadMemory((value << 8)+i)
+            self.sprMemory[i] = self.cpu.read_memory((value << 8)+i)
 
     def GetVWrite(self):
         return (self.registers[self.ctrl1] >> 2) & 1
@@ -150,7 +150,7 @@ class PPU():
 
     def AddressTranslation(self, addr):
         if addr < self.nameTable0:  # mapped by mapper in cart
-            return self.cpu.mapVMem(addr)
+            return self.cpu.map_vmem(addr)
 
         # adjust for name table mirror
         if addr >= 0x3000 and addr < 0x3F00:
@@ -340,12 +340,12 @@ class PPU():
                 self.SetVBlank()
                 if self.GetNMIMask() == 1:
                     self.nmi = 1
-                    self.cpu.nmiFlipFlop = 1
+                    self.cpu.nmi_flipflop = 1
         if self.tube_y == (self.ylines + 21):
             self.tube_y = 0
             self.ClearVBlank()
             self.nmi = 0
-            self.cpu.nmiFlipFlop = 1
+            self.cpu.nmi_flipflop = 1
 
 
     def runPPU(self, numCPUCycles):

@@ -26,8 +26,8 @@ class NesDebugger(object):
     """Command-line NES debugger"""
     def __init__(self, rom_file):
         self.cpu = MOS6502.CPU()
-        self.cpu.LoadRom(rom_file)
-        self.cpu.Reset()
+        self.cpu.load_rom(rom_file)
+        self.cpu.reset()
         self.breakpoints = []
         self.breakonwrite = []
         self.breakonread = []
@@ -35,45 +35,45 @@ class NesDebugger(object):
     def cpu_info(self):
         """Returns the current register values / CPU state in a string."""
         lines = ''
-        lines += "A: " + hex(self.cpu.GetRegister('A')) + "\t"
-        lines += "X: " + hex(self.cpu.GetRegister('X')) + "\t"
-        lines += "Y: " + hex(self.cpu.GetRegister('Y')) + "\n"
-        lines += "S: " + hex(self.cpu.GetRegister('S')) + "\t"
-        lines += "PC: " + hex(self.cpu.GetRegister('PC')) + "\t"
-        if self.cpu.GetFlag('C') != 0:
+        lines += "A: " + hex(self.cpu.get_register('A')) + "\t"
+        lines += "X: " + hex(self.cpu.get_register('X')) + "\t"
+        lines += "Y: " + hex(self.cpu.get_register('Y')) + "\n"
+        lines += "S: " + hex(self.cpu.get_register('S')) + "\t"
+        lines += "PC: " + hex(self.cpu.get_register('PC')) + "\t"
+        if self.cpu.get_flag('C') != 0:
             lines += "C "
-        if self.cpu.GetFlag('Z') != 0:
+        if self.cpu.get_flag('Z') != 0:
             lines += "Z "
-        if self.cpu.GetFlag('I') != 0:
+        if self.cpu.get_flag('I') != 0:
             lines += "I "
-        if self.cpu.GetFlag('V') != 0:
+        if self.cpu.get_flag('V') != 0:
             lines += "V "
-        if self.cpu.GetFlag('N') != 0:
+        if self.cpu.get_flag('N') != 0:
             lines += "N"
 
         return lines
 
     def show_last_four(self):
         """Print a disassembly context (last 4 instructions)"""
-        for addr in self.cpu.lastFour:
-            mem = self.cpu.GetMemory(addr, 3)
+        for addr in self.cpu.last_four:
+            mem = self.cpu.get_memory(addr, 3)
             print hex(addr) + " " + disasm(mem, 1)[0]
 
     def step_cpu(self):
         """Step the CPU forward one instruction."""
         next_addr = self.cpu.step()
-        mem = self.cpu.GetMemory(next_addr, 3)
+        mem = self.cpu.get_memory(next_addr, 3)
         print hex(next_addr) + " " + disasm(mem, 1)[0]
 
     def get_arg(self, arg_string):
         """Decode a debugger command argument from string to, e.g., int"""
         # if a register, get the value
         registers = {
-            'A': self.cpu.GetRegister('A'),
-            'X': self.cpu.GetRegister('X'),
-            'Y': self.cpu.GetRegister('Y'),
-            'PC': self.cpu.GetRegister('PC'),
-            'S': self.cpu.GetRegister('S') + 0x0100
+            'A': self.cpu.get_register('A'),
+            'X': self.cpu.get_register('X'),
+            'Y': self.cpu.get_register('Y'),
+            'PC': self.cpu.get_register('PC'),
+            'S': self.cpu.get_register('S') + 0x0100
             }
         for key in registers:
             if key in arg_string:
@@ -119,7 +119,7 @@ class NesDebugger(object):
             data_line = []
             line_addr = address + index
             for _ in range(0, line_len):
-                data_line.append(self.cpu.ReadMemory(address + index))
+                data_line.append(self.cpu.read_memory(address + index))
                 index += 1
                 if index == bytes_to_display:
                     self.print_mem_line(line_addr, data_line)
@@ -138,7 +138,7 @@ class NesDebugger(object):
         if len(cmd_list) > 2:
             length = self.get_arg(cmd_list[2])
 
-        mem = self.cpu.GetMemory(address, length*3)
+        mem = self.cpu.get_memory(address, length*3)
         lines = disasm(mem, length, address)
         for line in lines:
             print line
@@ -160,7 +160,7 @@ class NesDebugger(object):
         register = cmd_list[1]
         value = self.get_arg(cmd_list[2])
 
-        self.cpu.SetRegister(register, value)
+        self.cpu.set_register(register, value)
 
     @staticmethod
     def print_help():
@@ -200,15 +200,15 @@ class NesDebugger(object):
         if cmd == 'go' or cmd == 'g':
             try:
                 next_addr = \
-                  self.cpu.runToBreak(self.breakpoints, self.breakonwrite, self.breakonread)
+                  self.cpu.run_to_break(self.breakpoints, self.breakonwrite, self.breakonread)
             except StandardError:
                 traceback.print_exc(file=sys.stdout)
                 code.interact(local=locals())
-            mem = self.cpu.GetMemory(next_addr, 3)
+            mem = self.cpu.get_memory(next_addr, 3)
 
-            if self.cpu.pauseReason != None:
-                print self.cpu.pauseReason
-                self.cpu.pauseReason = None
+            if self.cpu.pause_reason != None:
+                print self.cpu.pause_reason
+                self.cpu.pause_reason = None
             try:
                 print "\n" + hex(next_addr) + " " + disasm(mem, 1)[0]
             except IndexError:
@@ -233,7 +233,7 @@ class NesDebugger(object):
             self.show_last_four()
 
         if cmd == 'reset':
-            self.cpu.Reset()
+            self.cpu.reset()
             self.step_cpu()
 
         if cmd == 'reg' or cmd == 'r':
