@@ -34,7 +34,7 @@ class NesDebugger(object):
 
     def cpu_info(self):
         """Returns the current register values / CPU state in a string."""
-        lines = ''
+        lines = "Cycle: " + str(self.cpu.global_cycle) + "\n"
         lines += "A: " + hex(self.cpu.get_register('A')) + "\t"
         lines += "X: " + hex(self.cpu.get_register('X')) + "\t"
         lines += "Y: " + hex(self.cpu.get_register('Y')) + "\n"
@@ -63,7 +63,7 @@ class NesDebugger(object):
         """Step the CPU forward one instruction."""
         next_addr = self.cpu.step()
         mem = self.cpu.get_memory(next_addr, 3)
-        print hex(next_addr) + " " + disasm(mem, 1)[0]
+        print hex(next_addr) + " " + disasm(mem, 1)[0] + "\tc: " + str(self.cpu.global_cycle)
 
     def get_arg(self, arg_string):
         """Decode a debugger command argument from string to, e.g., int"""
