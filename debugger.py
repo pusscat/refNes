@@ -159,8 +159,11 @@ class NesDebugger(object):
         """Set the specified register to the specified value"""
         register = cmd_list[1]
         value = self.get_arg(cmd_list[2])
-
-        self.cpu.set_register(register, value)
+        
+        if 'PC' not in register:
+            self.cpu.set_register(register, value)
+        else:
+            self.cpu.set_pc(value)
 
     @staticmethod
     def print_help():
@@ -255,6 +258,6 @@ class NesDebugger(object):
 
 # Start here:
 if __name__ == "__main__":
-    DEBUG_SESSION = NesDebugger("smb1.nes")
+    DEBUG_SESSION = NesDebugger(sys.argv[1])
     signal.signal(signal.SIGINT, signal_handler)
     DEBUG_SESSION.debug_loop()
