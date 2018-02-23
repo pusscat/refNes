@@ -207,7 +207,7 @@ def doBrk(cpu, instruction):
     cpu.set_flag('B', 1)
 
     # jmp to irqBrk vector
-    target = cpu.read_mem_word(cpu.irqBrk)
+    target = cpu.read_mem_word(cpu.irq_brk_vector)
     cpu.set_pc(target)
     cpu.paused = True
     return True
@@ -677,7 +677,7 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xE8: Instruction('INX', doInx, '', 1, 2),
                 0xC8: Instruction('INY', doIny, '', 1, 2),
                 0x4C: Instruction('JMP', doJmp, 'ABS', 3, 3),
-                0x6C: Instruction('JMP', doJmp, 'IND', 3, 3),
+                0x6C: Instruction('JMP', doJmp, 'IND', 3, 5),
                 0x20: Instruction('JSR', doJsr, 'ABS', 3, 6),
                 0xA9: Instruction('LDA', doLda, 'IMM', 2, 2),
                 0xA5: Instruction('LDA', doLda, 'ZERO', 2, 3),
