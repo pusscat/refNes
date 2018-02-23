@@ -63,7 +63,8 @@ class NesDebugger(object):
         """Step the CPU forward one instruction."""
         next_addr = self.cpu.step()
         mem = self.cpu.get_memory(next_addr, 3)
-        print hex(next_addr) + " " + disasm(mem, 1)[0] + "\tc: " + str(self.cpu.global_cycle)
+
+        print hex(next_addr) + " " + disasm(mem, 1)[0] + "\t\tA: " + hex(self.cpu.get_register('A')) + " X: " + hex(self.cpu.get_register('X')) + " Y: " + hex(self.cpu.get_register('Y')) + " P:" + hex(self.cpu.get_register('P')) + " SP: " + hex(self.cpu.get_register('S')) + " CYC:" + hex(self.cpu.global_cycle) + "\n"
 
     def get_arg(self, arg_string):
         """Decode a debugger command argument from string to, e.g., int"""
