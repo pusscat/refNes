@@ -12,7 +12,10 @@ class Mapper:
         self.bank2End = 0x10000
         
         self.bank1 = rom.romBanks[0]
-        self.bank2 = rom.romBanks[1]
+        if len(rom.romBanks) > 1:
+            self.bank2 = rom.romBanks[1]
+        else:
+            self.bank2 = rom.romBanks[0]
         self.vbank = rom.vromBanks[0]
 
     def mapMem(self, cpu, address):
