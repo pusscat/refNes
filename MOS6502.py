@@ -105,7 +105,7 @@ class CPU(object):
         ctrl_start = self.read_mem_word(self.reset_vector)
         self.set_pc(ctrl_start)
         self.set_register('S', 0xFD)
-        self.set_register('P', 0x00)  # MMM: documentation says P = P | 0x04 ?
+        self.set_register('P', 0x24)  # MMM: documentation says P = P | 0x04 ?
         self.clear_memory()           # MMM: documentation says memory is unchanged
 
         # https://wiki.nesdev.com/w/index.php/PPU_power_up_state

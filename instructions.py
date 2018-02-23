@@ -188,7 +188,7 @@ def doBit(cpu, instruction):
 
     cpu.set_flag('N', (value>>7)&1)
     cpu.set_flag('V', (value>>6)&1)
-    cpu.set_flag('Z', 1 if value & accuVal != 0 else 0)
+    cpu.set_flag('Z', 0 if value & accuVal != 0 else 1)
     return False
 
 def doBmi(cpu, instruction):
@@ -394,7 +394,7 @@ def doPha(cpu, instruction):
 
 def doPhp(cpu, instruction):
     srVal = cpu.get_register('P')
-    cpu.push_byte(srVal)
+    cpu.push_byte(srVal | 0x10)
     return False
 
 def doPla(cpu, instruction):
@@ -404,7 +404,7 @@ def doPla(cpu, instruction):
     return False
 
 def doPlp(cpu, instruction):
-    cpu.set_register('P', cpu.pop_byte())
+    cpu.set_register('P', cpu.pop_byte() & 0xEF | 0x20)
     return False
 
 def doRolAcc(cpu, instruction):
