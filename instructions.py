@@ -463,7 +463,7 @@ def doSbc(cpu, instruction):
     value = GetValue(cpu, instruction)
     cVal = cpu.get_flag('C')
 
-    newVal = aVal - value - cVal
+    newVal = aVal - value - (1-cVal)
 
     cpu.set_register('A', newVal)
     cpu.ctrl_update_flags(instruction.flags, aVal, value, newVal, True)
