@@ -39,7 +39,8 @@ class NesDebugger(object):
         lines += "X: " + hex(self.cpu.get_register('X')) + "\t"
         lines += "Y: " + hex(self.cpu.get_register('Y')) + "\n"
         lines += "S: " + hex(self.cpu.get_register('S')) + "\t"
-        lines += "PC: " + hex(self.cpu.get_register('PC')) + "\t"
+        lines += "PC: " + hex(self.cpu.get_register('PC')) + "\n"
+        lines += "P: " + hex(self.cpu.get_register('P')) + "\t"
         if self.cpu.get_flag('C') != 0:
             lines += "C "
         if self.cpu.get_flag('Z') != 0:
@@ -64,7 +65,7 @@ class NesDebugger(object):
         next_addr = self.cpu.step()
         mem = self.cpu.get_memory(next_addr, 3)
 
-        print hex(next_addr) + " " + disasm(mem, 1)[0] + "\t\tA: " + hex(self.cpu.get_register('A')) + " X: " + hex(self.cpu.get_register('X')) + " Y: " + hex(self.cpu.get_register('Y')) + " P:" + hex(self.cpu.get_register('P')) + " SP: " + hex(self.cpu.get_register('S')) + " CYC:" + hex(self.cpu.global_cycle) + "\n"
+        print hex(next_addr) + " " + disasm(mem, 1)[0] + "\t\tA: " + hex(self.cpu.get_register('A')) + " X: " + hex(self.cpu.get_register('X')) + " Y: " + hex(self.cpu.get_register('Y')) + " P:" + hex(self.cpu.get_register('P')) + " S: " + hex(self.cpu.get_register('S'))
 
     def get_arg(self, arg_string):
         """Decode a debugger command argument from string to, e.g., int"""
@@ -156,6 +157,55 @@ class NesDebugger(object):
         """Add a memory breakpoint (read)"""
         self.breakonread.append(self.get_arg(cmd_list[1]))
 
+    def test_log(self, cmd_list):
+        """Test execution against an execution log from another emu"""
+        log = open("tests/" + cmd_list[1] + ".log", "r")
+        log_lines = log.readlines()
+
+        pc_start = int("0x" + log_lines[0].split()[0], 16)
+        self.cpu.set_pc(pc_start)
+        print "Starting at " + hex(pc_start)
+
+        failed = False
+        instruction = 1
+        while failed == False:
+            line = log_lines[instruction]
+            data = line.split()
+            index = 0
+            for datum in data:
+                if 'A:' not in datum[:2]:
+                    index += 1
+                else: 
+                    break
+            pc = int("0x" + data[0], 16)
+            a = int("0x" + data[index][2:], 16)
+            x = int("0x" + data[index+1][2:], 16)
+            y = int("0x" + data[index+2][2:], 16)
+            p = int("0x" + data[index+3][2:], 16)
+            s = int("0x" + data[index+4][2:], 16)
+            self.step_cpu()
+
+            if (a != self.cpu.get_register('A')):
+                print "A is wrong: " + hex(a)
+                failed = True
+            if (x != self.cpu.get_register('X')):
+                print "X is wrong: " + hex(x)
+                failed = True
+            if (y != self.cpu.get_register('Y')):
+                print "Y is wrong: " + hex(y)
+                failed = True
+            if (p != self.cpu.get_register('P')):
+                print "P is wrong: " + hex(p)
+                failed = True
+            if (s != self.cpu.get_register('S')):
+                print "S is wrong: " + hex(s)
+                failed = True
+            if (pc != self.cpu.get_register('PC')):
+                print "PC is wrong: " + hex(pc)
+                failed = True
+
+            instruction += 1
+
     def set_register(self, cmd_list):
         """Set the specified register to the specified value"""
         register = cmd_list[1]
@@ -181,6 +231,7 @@ class NesDebugger(object):
         print "bwrite / bw\t\t - break on write"
         print "bread / br\t\t - break on read"
         print "reg / r\t\t\t - set register value"
+        print "test    \t\t\t - test execution against a log"
         print "quit / q\t\t - quit debugger"
 
     def print_screen(self):
@@ -243,6 +294,9 @@ class NesDebugger(object):
         if cmd == 'reg' or cmd == 'r':
             if len(cmd_list) == 3:
                 self.set_register(cmd_list)
+
+        if cmd == 'test':
+            self.test_log(cmd_list)
 
     def debug_loop(self):
         """Main event loop of debugger."""
