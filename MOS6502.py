@@ -225,26 +225,21 @@ class CPU(object):
 
         self.set_register('P', new_flag)
 
-    def create_overflow_condition(self, old_dst, old_src):
+    def create_overflow_condition(self, new_val):
         """Return boolean value whether operation creates an overflow condition"""
-        op1 = (old_dst & 0x80) >> (self.bitwidth - 1)
-        op2 = (old_src & 0x80) >> (self.bitwidth - 1)
-        of_cond = (((op1 ^ op2) ^ 0x2) & (((op1 + op2) ^ op2) & 0x2)) != 0
-
+        of_cond = new_val > 127 or new_val < -128
         return of_cond
 
     @staticmethod
-    def create_carry_condition(old_dst, old_src, sub_op):
+    def create_carry_condition(new_val):
         """Return boolean value whether operation creates a carry condition"""
-        if sub_op:
-            return ((~old_src) + 1) > old_dst
-        else:
-            return (old_src > 0) and (old_dst > (0xff - old_src))
+        carry_cond = new_val > 255 or new_val < 0
+        return carry_cond
 
     def ctrl_update_flags(self, flags, old_dst, old_src, new_val, sub_op):
         """Update, as needed, the C or V bits in the emulated flags register"""
-        of_cond = self.create_overflow_condition(old_dst, old_src)
-        cf_cond = self.create_carry_condition(old_dst, old_src, sub_op)
+        of_cond = self.create_overflow_condition(new_val)
+        cf_cond = self.create_carry_condition(new_val)
 
         valid_flags = {'C': cf_cond is True,
                        'Z': new_val == 0,
