@@ -67,6 +67,9 @@ class PPU():
         self.latch_lo = 0
         self.latch_hi = 0
 
+    def GetPC(self):
+        return self.cpu.get_register('PC')
+
     def GetRegister(self, addr):
         #print "Get Register " + hex(addr) + ": " + hex(self.registers[addr])
         return self.registers[addr] 
@@ -86,8 +89,10 @@ class PPU():
             self.flipflop0 ^= 1
         if addr == self.vramLatch:
             if self.flipflop1 == 0:
+                #print hex(self.GetPC()) + ": latch_lo = " + hex(value)
                 self.latch_lo = value
             else:
+                #print hex(self.GetPC()) + ": latch_hi = " + hex(value)
                 self.latch_hi = value
             self.flipflop1 ^= 1
         if addr == self.vramData:
