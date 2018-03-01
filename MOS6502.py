@@ -211,7 +211,7 @@ class CPU(object):
         """Set the current emulated 8-bit status (flags) register to the given value"""
         flags = {'C':0,  # Carry
                  'Z':1,  # Zero
-                 'I':2,  # Interrctrl_upt mask
+                 'I':2,  # Interrupt mask
                  'D':3,  # Decimal
                  'B':4,  # Break
                  'V':6,  # Overflow
@@ -242,7 +242,7 @@ class CPU(object):
         cf_cond = self.create_carry_condition(new_val)
 
         valid_flags = {'C': cf_cond is True,
-                       'Z': new_val == 0,
+                       'Z': new_val & 0xFF == 0,
                        'V': of_cond is True,
                        'N': ((new_val & 0x80) != 0)}
 
