@@ -57,7 +57,7 @@ def GetValue(cpu, instruction):
         return cpu.read_memory((cpu.read_memory(addrPtr+1) << 8) + cpu.read_memory(addrPtr))
     if operType is 'INDY':
         highOrder = cpu.read_memory(cpu.read_rel_pc(1)+1) << 8
-        lowOrder = cpu.read_memory(cpu.read_rel_pc(1)) + cpu.get_register('Y') + cpu.get_flag('C')
+        lowOrder = cpu.read_memory(cpu.read_rel_pc(1)) + cpu.get_register('Y')
         if lowOrder > 0xFF:
             instruction.addCycles(1)
             # we should NOT add 1 to high order in this case.
