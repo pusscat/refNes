@@ -53,11 +53,11 @@ def GetValue(cpu, instruction):
             instruction.addCycles(1)
         return cpu.read_memory((cpu.read_rel_pc(2) << 8) + lowOrder)
     if operType is 'INDX':
-        addrPtr = cpu.read_mem_word_bug(cpu.read_rel_pc(1) + cpu.get_register('X'))
+        addrPtr = cpu.read_mem_word_bug((cpu.read_rel_pc(2) << 8) +  cpu.read_rel_pc(1) + cpu.get_register('X'))
         return cpu.read_memory(addrPtr)
     if operType is 'INDY':
         lowOrder = cpu.read_memory(cpu.read_rel_pc(1)) + cpu.get_register('Y')
-        addrPtr = cpu.read_mem_word_bug(cpu.read_rel_pc(1) + cpu.get_register('Y'))
+        addrPtr = cpu.read_mem_word_bug((cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1) + cpu.get_register('Y'))
         if lowOrder > 0xFF:
             instruction.addCycles(1)
         return cpu.read_memory(addrPtr)
@@ -84,11 +84,11 @@ def GetAddress(cpu, instruction):
     if operType is 'ABSY':
         return (cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1) + cpu.get_register('Y')
     if operType is 'IND':
-        return cpu.read_mem_word_bug(cpu.read_rel_pc(1))
+        return cpu.read_mem_word_bug((cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1))
     if operType is 'INDX':
-        return cpu.read_mem_word_bug(cpu.read_rel_pc(1) + cpu.get_register('X'))
+        return cpu.read_mem_word_bug((cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1) + cpu.get_register('X'))
     if operType is 'INDY':
-        lowOrder = cpu.read_memory(cpu.read_rel_pc(1)) + cpu.get_register('Y')
+        lowOrder = cpu.read_memory((cpu.read_rel_pc(2) << 8) +  cpu.read_rel_pc(1)) + cpu.get_register('Y')
         if lowOrder > 0xFF:
             instruction.addCycles(1)
             # we should NOT add 1 to high order in this case.
