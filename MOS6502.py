@@ -191,6 +191,9 @@ class CPU(object):
 
     def set_register(self, name, value):
         """Set the given 8-bit register (A, X, Y, S, or P registers only)"""
+        if name is 'P':
+            value = value | (1 << 5)
+
         self.regs[name].set_value(value & 0xFF)
         return value & 0xFF
 
