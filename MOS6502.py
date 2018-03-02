@@ -194,8 +194,8 @@ class CPU(object):
 
     def push_byte(self, value):
         """Push the given byte value onto the emulated CPU stack."""
-        reg_s = self.get_register('S') - 1
         self.set_memory(reg_s + self.stack_base, value)
+        reg_s = self.get_register('S') - 1
         self.set_register('S', reg_s)
         return reg_s + self.stack_base
 
