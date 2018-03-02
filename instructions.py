@@ -92,7 +92,7 @@ def GetAddress(cpu, instruction):
         if lowOrder > 0xFF:
             instruction.addCycles(1)
             # we should NOT add 1 to high order in this case.
-        return cpu.read_mem_word_bug(cpu.read_rel_pc(1) + cpu.get_register('X'))
+        return cpu.read_mem_word_bug(cpu.read_rel_pc(1) + cpu.get_register('Y'))
 
     return None
 
