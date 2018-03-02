@@ -107,6 +107,8 @@ class CPU(object):
         self.set_register('S', 0xFD)
         self.set_register('P', 0x24)  # MMM: documentation says P = P | 0x04 ?
         self.clear_memory()           # MMM: documentation says memory is unchanged
+        self.set_memory(0x01FE, 0xFF)
+        self.set_memory(0x01FF, 0xFF)
 
         # https://wiki.nesdev.com/w/index.php/PPU_power_up_state
         self.ppu = PPU(self)          # MMM: PPU object should probably have its own reset() method
@@ -206,9 +208,9 @@ class CPU(object):
 
     def pop_byte(self):
         """Return a byte value popped from the emulated CPU stack."""
-        reg_s = self.get_register('S')
+        reg_s = self.get_register('S') + 1
         value = self.read_memory(reg_s +self.stack_base)
-        self.set_register('S', reg_s+1)
+        self.set_register('S', reg_s)
         return value
 
     def pop_word(self):
