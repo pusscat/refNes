@@ -569,7 +569,7 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'LDA': ['N', 'Z'],
             'LDX': ['N', 'Z'],
             'LDY': ['N', 'Z'],
-            'LSR': ['Z'], # set C manually
+            'LSR': ['N', 'Z'], # set C manually
             'NOP': [],
             'ORA': ['N', 'Z'],
             'PHA': [],
