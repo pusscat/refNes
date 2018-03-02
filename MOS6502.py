@@ -144,6 +144,14 @@ class CPU(object):
         value += self.read_memory(address + 1) << 8
         return value
 
+    def read_mem_word_bug(self, addr):
+        base = addr
+        hi_addr = (base & 0xFF00) | (base + 1)
+        lo_byte = self.read_memory(base)
+        hi_byte = self.read_memory(hi_addr)
+
+        return ((hi_byte << 8) | lo_byte)
+
     def read_rel_pc(self, offset):
         """Return 1 byte of memory read using PC-relative addressing"""
         return self.read_memory(self.get_register('PC')+offset)

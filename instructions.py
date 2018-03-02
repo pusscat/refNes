@@ -36,32 +36,31 @@ def GetValue(cpu, instruction):
         return cpu.read_memory(cpu.read_rel_pc(1))
     if operType is 'ZEROX' or operType is 'INDX':
         # CANNOT CROSS PAGE BOUNDARY SO MASK READ ADDRESS
-        return cpu.read_memory(((cpu.read_rel_pc(1) + cpu.get_register('X') & 0xFF)) & 0xFF)
+        return cpu.read_memory((cpu.read_rel_pc(1) + cpu.get_register('X')) & 0xFF)
     if operType is 'ZEROY':
         return cpu.read_memory((cpu.read_rel_pc(1) + cpu.get_register('Y')) & 0xFF)
     if operType is 'ABS':
         return cpu.read_memory((cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1))
     if operType is 'ABSX': # THIS CAN CROSS PAGE BOUNDARY
-        lowOrder = cpu.read_rel_pc(1) + cpu.get_register('X') + cpu.get_flag('C')
+        lowOrder = cpu.read_rel_pc(1) + cpu.get_register('X')
         hiOrder = cpu.read_rel_pc(2)
         if lowOrder > 0xFF:
             instruction.addCycles(1)
         return cpu.read_memory((hiOrder << 8) + lowOrder)
     if operType is 'ABSY':
-        lowOrder = cpu.read_rel_pc(1) + cpu.get_register('Y') + cpu.get_flag('C')
+        lowOrder = cpu.read_rel_pc(1) + cpu.get_register('Y')
         if lowOrder > 0xFF:
             instruction.addCycles(1)
         return cpu.read_memory((cpu.read_rel_pc(2) << 8) + lowOrder)
     if operType is 'INDX':
-        addrPtr = ((cpu.read_rel_pc(1) + cpu.get_register('X')) & 0xFF)
-        return cpu.read_memory((cpu.read_memory(addrPtr+1) << 8) + cpu.read_memory(addrPtr))
+        addrPtr = cpu.read_mem_word_bug(cpu.read_rel_pc(1) + cpu.get_register('X'))
+        return cpu.read_memory(addrPtr)
     if operType is 'INDY':
-        highOrder = cpu.read_memory(cpu.read_rel_pc(1)+1) << 8
         lowOrder = cpu.read_memory(cpu.read_rel_pc(1)) + cpu.get_register('Y')
+        addrPtr = cpu.read_mem_word_bug(cpu.read_rel_pc(1) + cpu.get_register('Y'))
         if lowOrder > 0xFF:
             instruction.addCycles(1)
-            # we should NOT add 1 to high order in this case.
-        return cpu.read_memory(highOrder + (lowOrder & 0xFF))
+        return cpu.read_memory(addrPtr)
     if operType is 'PCREL':
         pcReg = cpu.get_register('PC') + instruction.size
         # DO NOT & lo with 0xFF if pos - this can traverse page boundaries
@@ -81,28 +80,19 @@ def GetAddress(cpu, instruction):
     if operType is 'ABS':
         return (cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1)
     if operType is 'ABSX':
-        return (cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1) + cpu.get_register('X') + cpu.get_flag('C')
+        return (cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1) + cpu.get_register('X')
     if operType is 'ABSY':
-        return (cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1) + cpu.get_register('Y') + cpu.get_flag('C')
+        return (cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1) + cpu.get_register('Y')
     if operType is 'IND':
-        addr = (cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1)
-        lowOrder = cpu.read_memory(addr)
-        if (addr & 0xFF) == 0xFF:
-            addr = addr & 0xFF00 # DO NOT WALK PAGE BOUNDARIES
-        else:
-            addr += 1
-        highOrder = cpu.read_memory(addr) << 8
-        return  highOrder + lowOrder
+        return cpu.read_mem_word_bug(cpu.read_rel_pc(1))
     if operType is 'INDX':
-        addrPtr = ((cpu.read_rel_pc(1) + cpu.get_register('X') + cpu.get_flag('C')) & 0xFF)
-        return (cpu.read_memory(addrPtr+1) << 8) + cpu.read_memory(addrPtr)
+        return cpu.read_mem_word_bug(cpu.read_rel_pc(1) + cpu.get_register('X'))
     if operType is 'INDY':
-        highOrder = cpu.read_memory(cpu.read_rel_pc(1)+1) << 8
-        lowOrder = cpu.read_memory(cpu.read_rel_pc(1)) + cpu.get_register('Y') + cpu.get_flag('C')
+        lowOrder = cpu.read_memory(cpu.read_rel_pc(1)) + cpu.get_register('Y')
         if lowOrder > 0xFF:
             instruction.addCycles(1)
             # we should NOT add 1 to high order in this case.
-        return highOrder + (lowOrder & 0xFF)
+        return cpu.read_mem_word_bug(cpu.read_rel_pc(1) + cpu.get_register('X'))
 
     return None
 
