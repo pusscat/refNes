@@ -194,10 +194,10 @@ class CPU(object):
 
     def push_byte(self, value):
         """Push the given byte value onto the emulated CPU stack."""
+        reg_s = self.get_register('S')
         self.set_memory(reg_s + self.stack_base, value)
-        reg_s = self.get_register('S') - 1
-        self.set_register('S', reg_s)
-        return reg_s + self.stack_base
+        self.set_register('S', reg_s - 1)
+        return reg_s + self.stack_base - 1
 
     def push_word(self, value):
         """Push the given 16-bit word value onto the emulated CPU stack."""
