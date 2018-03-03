@@ -76,7 +76,9 @@ def GetAddress(cpu, instruction):
     if operType is 'ZERO':
         return cpu.read_rel_pc(1)
     if operType is 'ZEROX':
-        return (cpu.read_rel_pc(1) + cpu.get_register('X')) & 0xFF
+        return ((cpu.read_rel_pc(1) + cpu.get_register('X')) & 0xFF)
+    if operType is 'ZEROY':
+        return ((cpu.read_rel_pc(1) + cpu.get_register('Y')) & 0xFF)
     if operType is 'ABS':
         return (cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1)
     if operType is 'ABSX':
