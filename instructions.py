@@ -56,7 +56,8 @@ def GetValue(cpu, instruction):
         addrPtr = cpu.read_mem_word_bug(cpu.read_rel_pc(1) + cpu.get_register('X'))
         return cpu.read_memory(addrPtr)
     if operType is 'INDY':
-        lowOrder = cpu.read_mem_word_bug(cpu.read_rel_pc(1) + cpu.get_register('Y'))
+        lowOrder = cpu.read_mem_word_bug(cpu.read_rel_pc(1)) + cpu.get_register('Y')
+        lowOrder = lowOrder & 0xFFFF
         if lowOrder > 0xFF:
             instruction.addCycles(1)
         return cpu.read_memory(lowOrder)
@@ -87,11 +88,12 @@ def GetAddress(cpu, instruction):
     if operType is 'INDX':
         return cpu.read_mem_word_bug(cpu.read_rel_pc(1) + cpu.get_register('X'))
     if operType is 'INDY':
-        lowOrder = cpu.read_mem_word_bug(cpu.read_rel_pc(1) + cpu.get_register('Y'))
+        lowOrder = cpu.read_mem_word_bug(cpu.read_rel_pc(1)) + cpu.get_register('Y')
+        lowOrder = lowOrder & 0xFFFF
         if lowOrder > 0xFF:
             instruction.addCycles(1)
             # we should NOT add 1 to high order in this case.
-        return lowOrder & 0xFF
+        return 
 
     return None
 
