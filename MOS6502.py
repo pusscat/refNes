@@ -147,7 +147,10 @@ class CPU(object):
         return value
 
     def read_mem_word_bug(self, addr):
-        hi_addr = (addr & 0xFF00) | (addr + 1)
+        #hi_addr = (addr & 0xFF00) | ((addr + 1) & 0xFF)
+        addr = addr & 0xFF
+        hi_addr = (addr + 1) & 0xFF
+        print hex(hi_addr) + " " + hex(addr)
         lo_byte = self.read_memory(addr)
         hi_byte = self.read_memory(hi_addr)
 
