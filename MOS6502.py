@@ -130,6 +130,7 @@ class CPU(object):
 
     def read_memory(self, address):
         """Return a read of 1 byte of main memory from the given address"""
+        address = address & 0xFFFF
         if address in self.breads:
             self.paused = True
             self.pause_reason = 'Read at ' + hex(address)

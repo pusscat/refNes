@@ -82,9 +82,10 @@ def GetAddress(cpu, instruction):
     if operType is 'ABSX':
         return (cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1) + cpu.get_register('X')
     if operType is 'ABSY':
-        return (cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1) + cpu.get_register('Y')
+        return ((cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1) + cpu.get_register('Y')) & 0xFFFF
     if operType is 'IND':
         addr = cpu.read_mem_word_bug((cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1))
+        addr = addr & 0xFFFF
         return addr
     if operType is 'INDX':
         return cpu.read_mem_word_bug((cpu.read_rel_pc(1) + cpu.get_register('X')) & 0xFF)
