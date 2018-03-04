@@ -1,11 +1,17 @@
 import MOS6502
 import instructions
+import code
 
 def disasm(memory, maxLines=0, address=-1):
     index = 0
     lines = []
 
     while index < len(memory):
+        opcode = memory[index]
+        if opcode not in instructions.instructions.keys():
+            print "Undefined opcode: " + hex(opcode)
+            code.interact(local=locals())
+
         currInst = instructions.instructions[memory[index]]
         
         if address > 0:
