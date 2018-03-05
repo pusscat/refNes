@@ -567,6 +567,22 @@ def doTya(cpu, instruction):
     cpu.ctrl_update_flags(instruction.flags, yVal, yVal, yVal, False)
     return False
 
+def doDcm(cpu, instruction):
+    addr = GetAddress(cpu, instruction)
+    value = (GetValue(cpu, instruction) - 1)
+    aVal = cpu.get_register('A')
+   
+    newVal = value - aVal
+    # Dont set a register in compare
+    if aVal >= value:
+        cpu.set_flag('C', 1)
+    else:
+        cpu.set_flag('C', 0)
+    
+    cpu.set_memory(addr, value)
+    cpu.ctrl_update_flags(instruction.flags, value, aVal, newVal, True)
+    return False
+
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - better clock info
 # http://www.6502.org/tutorials/6502opcodes.html - better descriptions
 # http://6502.org/tutorials/65c02opcodes.html#3 - additional instructions
@@ -591,6 +607,7 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'CMP': ['N', 'Z'],
             'CPX': ['N', 'Z'],
             'CPY': ['N', 'Z'],
+            'DCM': ['N', 'Z'],
             'DEC': ['N', 'Z'],
             'DEX': ['N', 'Z'],
             'DEY': ['N', 'Z'],
@@ -819,4 +836,11 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x87: Instruction('AXS', doAxs, 'ZERO', 2, 3),
                 0x97: Instruction('AXS', doAxs, 'ZEROY', 2, 4),
                 0x83: Instruction('AXS', doAxs, 'INDX', 2, 6),
+                0xCF: Instruction('DCM', doDcm, 'ABS', 3, 6),
+                0xDF: Instruction('DCM', doDcm, 'ABSX', 3, 7),
+                0xDB: Instruction('DCM', doDcm, 'ABSY', 3, 7),
+                0xC7: Instruction('DCM', doDcm, 'ZERO', 2, 5),
+                0xD7: Instruction('DCM', doDcm, 'ZEROX', 2, 6),
+                0xC3: Instruction('DCM', doDcm, 'INDX', 2, 8),
+                0xD3: Instruction('DCM', doDcm, 'INXY', 2, 8),
                }
