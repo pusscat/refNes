@@ -363,6 +363,15 @@ def doSax(cpu, instruction):
     cpu.ctrl_update_flags(instruction.flags, xVal, aVal, newVal, True)
     return False
 
+def doAxs(cpu, instruction):
+    addr = GetAddress(cpu, instruction)
+    xVal = cpu.get_register('X')
+    aVal = cpu.get_register('A')
+
+    newVal = (aVal & xVal)
+    cpu.set_memory(addr, newVal)
+    return False
+
 def doLdy(cpu, instruction):
     value = GetValue(cpu, instruction)
     yVal = cpu.get_register('Y')
@@ -564,6 +573,7 @@ def doTya(cpu, instruction):
 flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'AND': ['N', 'Z'],
             'ASL': ['N', 'Z'], # set C manually
+            'AXS': [],
             'BCC': [],
             'BCS': [],
             'BEQ': [],
@@ -804,4 +814,8 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xA3: Instruction('LAX', doLax, 'INDX', 2, 6),
                 0xB3: Instruction('LAX', doLax, 'INDY', 2, 5),
                 0xCB: Instruction('SAX', doSax, 'IMM', 2, 2),
+                0x8F: Instruction('SAX', doAxs, 'ABS', 2, 2),
+                0x87: Instruction('SAX', doAxs, 'ZERO', 2, 2),
+                0x97: Instruction('SAX', doAxs, 'ZEROY', 2, 2),
+                0x83: Instruction('SAX', doAxs, 'ABSX', 2, 2),
                }
