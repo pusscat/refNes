@@ -572,15 +572,14 @@ def doDcm(cpu, instruction):
     value = (GetValue(cpu, instruction) - 1)
     aVal = cpu.get_register('A')
    
-    newVal = value - aVal
-    # Dont set a register in compare
+    newVal = aVal - value
     if aVal >= value:
         cpu.set_flag('C', 1)
     else:
         cpu.set_flag('C', 0)
     
     cpu.set_memory(addr, value)
-    cpu.ctrl_update_flags(instruction.flags, value, aVal, newVal, True)
+    cpu.ctrl_update_flags(instruction.flags, aVal, value, newVal, True)
     return False
 
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - better clock info
@@ -842,5 +841,5 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xC7: Instruction('DCM', doDcm, 'ZERO', 2, 5),
                 0xD7: Instruction('DCM', doDcm, 'ZEROX', 2, 6),
                 0xC3: Instruction('DCM', doDcm, 'INDX', 2, 8),
-                0xD3: Instruction('DCM', doDcm, 'INXY', 2, 8),
+                0xD3: Instruction('DCM', doDcm, 'INDY', 2, 8),
                }
