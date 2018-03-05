@@ -353,6 +353,16 @@ def doLax(cpu, instruction):
     cpu.ctrl_update_flags(instruction.flags, xVal, value, value, False)
     return False
 
+def doSax(cpu, instruction):
+    value = GetValue(cpu, instruction)
+    xVal = cpu.get_register('X')
+    aVal = cpu.get_register('A')
+
+    newVal = (aVal & xVal) - value
+    cpu.set_register('X', newVal)
+    cpu.ctrl_update_flags(instruction.flags, xVal, aVal, newVal, True)
+    return False
+
 def doLdy(cpu, instruction):
     value = GetValue(cpu, instruction)
     yVal = cpu.get_register('Y')
@@ -595,6 +605,7 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'ROR': ['N', 'Z'], # manual C
             'RTI': [],
             'RTS': [],
+            'SAX': ['N', 'C', 'Z'],
             'SBC': ['N', 'C', 'Z', 'V'],
             'SEC': [],
             'SED': [],
@@ -792,4 +803,5 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xB7: Instruction('LAX', doLax, 'ZEROY', 2, 4),
                 0xA3: Instruction('LAX', doLax, 'INDX', 2, 6),
                 0xB3: Instruction('LAX', doLax, 'INDY', 2, 5),
+                0xCB: Instruction('SAX', doSax, 'IMM', 2, 2),
                }
