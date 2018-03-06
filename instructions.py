@@ -434,6 +434,20 @@ def doLsr(cpu, instruction):
     cpu.ctrl_update_flags(instruction.flags, value, value, newVal, True)
     return False
 
+def doLse(cpu, instruction):
+    aVal = cpu.get_register('A')
+    address = GetAddress(cpu, instruction)
+    value = cpu.read_memory(address)
+    newVal = value >> 1
+    cpu.set_memory(address, newVal)
+    cBit = value & 1
+    newAVal = aVal ^ newVal
+    
+    cpu.set_register('A', newAVal)
+    cpu.set_flag('C', cBit)
+    cpu.ctrl_update_flags(instruction.flags, aVal, newVal, newAVal, True)
+    return False
+
 def doNop(cpu, instruction):
     return False
 
@@ -672,6 +686,7 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'LDY': ['N', 'Z'],
             'LAX': ['N', 'Z'],
             'LSR': ['N', 'Z'], # set C manually
+            'LSE': ['N', 'Z'], # set C manually
             'NOP': [],
             'ORA': ['N', 'Z'],
             'PHA': [],
@@ -915,4 +930,11 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x37: Instruction('RLA', doRla, 'ZEROX', 2, 6),
                 0x23: Instruction('RLA', doRla, 'INDX', 2, 8),
                 0x33: Instruction('RLA', doRla, 'INDY', 2, 8),
+                0x4F: Instruction('LSE', doLse, 'ABS', 3, 6),
+                0x5F: Instruction('LSE', doLse, 'ABSX', 3, 7),
+                0x5B: Instruction('LSE', doLse, 'ABSY', 3, 7),
+                0x47: Instruction('LSE', doLse, 'ZERO', 2, 5),
+                0x57: Instruction('LSE', doLse, 'ZEROX', 2, 6),
+                0x43: Instruction('LSE', doLse, 'INDX', 2, 8),
+                0x53: Instruction('LSE', doLse, 'INDY', 2, 8),
                }
