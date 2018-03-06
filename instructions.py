@@ -492,6 +492,19 @@ def doSbc(cpu, instruction):
     cpu.ctrl_update_flags(instruction.flags, aVal, value, newVal, True)
     return False
 
+def doIns(cpu, instruction):
+    aVal = cpu.get_register('A')
+    value = GetValue(cpu, instruction) + 1
+    addr = GetAddress(cpu, instruction)
+    cVal = cpu.get_flag('C')
+
+    newVal = aVal - value - (1-cVal)
+
+    cpu.set_memory(addr, value)
+    cpu.set_register('A', newVal)
+    cpu.ctrl_update_flags(instruction.flags, aVal, value, newVal, True)
+    return False
+
 def doSec(cpu, instruction):
     cpu.set_flag('C', 1)
     return False
@@ -612,6 +625,7 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'DEY': ['N', 'Z'],
             'EOR': ['N', 'Z'],
             'INC': ['N', 'Z'],
+            'INS': ['N', 'Z', 'V'],
             'INX': ['N', 'Z'],
             'INY': ['N', 'Z'],
             'JMP': [],
@@ -842,4 +856,11 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xD7: Instruction('DCM', doDcm, 'ZEROX', 2, 6),
                 0xC3: Instruction('DCM', doDcm, 'INDX', 2, 8),
                 0xD3: Instruction('DCM', doDcm, 'INDY', 2, 8),
+                0xEF: Instruction('INS', doIns, 'ABS', 3, 6),
+                0xFF: Instruction('INS', doIns, 'ABSX', 3, 7),
+                0xFB: Instruction('INS', doIns, 'ABSY', 3, 7),
+                0xE7: Instruction('INS', doIns, 'ZERO', 2, 5),
+                0xF7: Instruction('INS', doIns, 'ZEROX', 2, 6),
+                0xE3: Instruction('INS', doIns, 'INDX', 2, 8),
+                0xF3: Instruction('INS', doIns, 'INDY', 2, 8),
                }
