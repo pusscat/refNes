@@ -137,6 +137,24 @@ def doAsl(cpu, instruction):
     cpu.ctrl_update_flags(instruction.flags, memVal, memVal, newVal, False)
     return False
 
+def doAos(cpu, instruction):
+    address = GetAddress(cpu, instruction)
+    memVal = cpu.read_memory(address)
+    aVal = cpu.get_register('A')
+
+    newVal = memVal << 1
+    newAVal = aVal | newVal
+
+    if newVal > 0xFF:
+        cpu.set_flag('C', 1)
+    else:
+        cpu.set_flag('C', 0)
+
+    cpu.set_register('A', newAVal)
+    cpu.set_memory(address, newVal)
+    cpu.ctrl_update_flags(instruction.flags, aVal, memVal, newAVal, False)
+    return False
+
 def doAslAccu(cpu, instruction):
     accuVal = cpu.get_register('A')
 
@@ -601,6 +619,7 @@ def doDcm(cpu, instruction):
 flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'AND': ['N', 'Z'],
             'ASL': ['N', 'Z'], # set C manually
+            'AOS': ['N', 'Z'],
             'AXS': [],
             'BCC': [],
             'BCS': [],
@@ -863,4 +882,11 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xF7: Instruction('INS', doIns, 'ZEROX', 2, 6),
                 0xE3: Instruction('INS', doIns, 'INDX', 2, 8),
                 0xF3: Instruction('INS', doIns, 'INDY', 2, 8),
+                0x0F: Instruction('AOS', doAos, 'ABS', 3, 6),
+                0x1F: Instruction('AOS', doAos, 'ABSX', 3, 7),
+                0x1B: Instruction('AOS', doAos, 'ABSY', 3, 7),
+                0x07: Instruction('AOS', doAos, 'ZERO', 2, 5),
+                0x17: Instruction('AOS', doAos, 'ZEROX', 2, 6),
+                0x03: Instruction('AOS', doAos, 'INDX', 2, 8),
+                0x13: Instruction('AOS', doAos, 'INDY', 2, 8),
                }
