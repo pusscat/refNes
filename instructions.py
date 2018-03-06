@@ -155,6 +155,24 @@ def doAos(cpu, instruction):
     cpu.ctrl_update_flags(instruction.flags, aVal, memVal, newAVal, False)
     return False
 
+def doRla(cpu, instruction):
+    address = GetAddress(cpu, instruction)
+    memVal = cpu.read_memory(address)
+    aVal = cpu.get_register('A')
+
+    oldC = cpu.get_flag('C')
+    newC = 1 if (memVal & 0x80) else 0
+    newVal = (memVal << 1) + oldC
+
+    newAVal = aVal & newVal
+
+    cpu.set_flag('C', newC)
+    cpu.set_register('A', newAVal)
+    cpu.set_memory(address, newVal)
+    cpu.ctrl_update_flags(instruction.flags, aVal, memVal, newAVal, False)
+    return False
+
+
 def doAslAccu(cpu, instruction):
     accuVal = cpu.get_register('A')
 
@@ -660,6 +678,7 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'PHP': [],
             'PLA': ['N', 'Z'],
             'PLP': [],
+            'RLA': ['N', 'Z'], # manual C
             'ROL': ['N', 'Z'], # manual C
             'ROR': ['N', 'Z'], # manual C
             'RTI': [],
@@ -889,4 +908,11 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x17: Instruction('AOS', doAos, 'ZEROX', 2, 6),
                 0x03: Instruction('AOS', doAos, 'INDX', 2, 8),
                 0x13: Instruction('AOS', doAos, 'INDY', 2, 8),
+                0x2F: Instruction('RLA', doRla, 'ABS', 3, 6),
+                0x3F: Instruction('RLA', doRla, 'ABSX', 3, 7),
+                0x3B: Instruction('RLA', doRla, 'ABSY', 3, 7),
+                0x27: Instruction('RLA', doRla, 'ZERO', 2, 5),
+                0x37: Instruction('RLA', doRla, 'ZEROX', 2, 6),
+                0x23: Instruction('RLA', doRla, 'INDX', 2, 8),
+                0x33: Instruction('RLA', doRla, 'INDY', 2, 8),
                }
