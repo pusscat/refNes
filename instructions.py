@@ -522,6 +522,24 @@ def doRor(cpu, instruction):
     cpu.ctrl_update_flags(instruction.flags, value, value, newVal, False)
     return False
 
+def doRra(cpu, instruction):
+    addr = GetAddress(cpu, instruction)
+    aVal = cpu.get_register('A')
+    value = cpu.read_memory(addr)
+    oldC = cpu.get_flag('C')
+    newC = 1 if (value & 0x1) else 0
+    newVal = (value >> 1) + (oldC * 0x80)
+    
+    newAVal = aVal + newVal + newC
+
+    cpu.set_register('A', newAVal)
+    cpu.set_memory(addr, newVal)
+    cpu.ctrl_update_flags(instruction.flags, aVal, newVal, newAVal, False)
+    return False
+
+
+
+
 def doRti(cpu, instruction):
     cpu.set_register('P', cpu.pop_byte())
     cpu.set_pc(cpu.pop_word())
@@ -696,6 +714,7 @@ flags = {   'ADC': ['N', 'Z', 'C', 'V'],
             'RLA': ['N', 'Z'], # manual C
             'ROL': ['N', 'Z'], # manual C
             'ROR': ['N', 'Z'], # manual C
+            'RRA': ['N', 'Z', 'C', 'V'], # manual C
             'RTI': [],
             'RTS': [],
             'SAX': ['N', 'C', 'Z'],
@@ -937,4 +956,11 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x57: Instruction('LSE', doLse, 'ZEROX', 2, 6),
                 0x43: Instruction('LSE', doLse, 'INDX', 2, 8),
                 0x53: Instruction('LSE', doLse, 'INDY', 2, 8),
+                0x6F: Instruction('RRA', doRra, 'ABS', 3, 6),
+                0x7F: Instruction('RRA', doRra, 'ABSX', 3, 7),
+                0x7B: Instruction('RRA', doRra, 'ABSY', 3, 7),
+                0x67: Instruction('RRA', doRra, 'ZERO', 2, 5),
+                0x77: Instruction('RRA', doRra, 'ZEROX', 2, 6),
+                0x63: Instruction('RRA', doRra, 'INDX', 2, 8),
+                0x73: Instruction('RRA', doRra, 'INDY', 2, 8),
                }
