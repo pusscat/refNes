@@ -11,7 +11,7 @@ then type 'g'
 Todo:
 
 - [X] finish instructions
-- [] unit tests
+- [X] unit tests
 - [X] abstract out memory from cpu
 - [X] abstract out mappers from memory
 - [X] create the cartridge rom parser/loader
