@@ -1,12 +1,11 @@
 """
 Debugger: demonstrates the refNes core. Helpful in testing.
 """
-
 import sys
 import signal
 import traceback
 import code
-
+import re
 
 import MOS6502
 from disasm import disasm
@@ -14,10 +13,10 @@ from disasm import disasm
 
 def signal_handler(signum, frame):
     """Signal handler for asynchronous events in the debugger, like user keyboard events"""
-    print '\nEmulation paused by signal ' + str(signum) + ' at ' \
+    print('\nEmulation paused by signal ' + str(signum) + ' at ' \
         + str(frame.f_code.co_filename) \
-        + ':' + str(frame.f_code.co_name) + '() line ' + str(frame.f_lineno)
-    print 'Use "q" or "quit" to quit.'
+        + ':' + str(frame.f_code.co_name) + '() line ' + str(frame.f_lineno))
+    print('Use "q" or "quit" to quit.')
 
     DEBUG_SESSION.cpu.paused = True
 
@@ -53,22 +52,85 @@ class NesDebugger(object):
             lines += "N"
 
         return lines
+    
+    def bp_info(self):
+        """Returns the current list of breakpoints."""
+        if len(self.breakpoints) == 0:
+            return "No breakpoints set."
+        lines = "BPs:\n"
+        for i in range(len(self.breakpoints)):
+            lines += f"{i}: {hex(self.breakpoints[i])}\t"
+            if self.get_arg("PC") == self.breakpoints[i]:
+                lines += "<-PC"
+            lines += "\n"
+
+        return lines
+    
+    def bwrite_info(self):
+        """Returns the current list of break on writes."""
+        if len(self.breakonwrite) == 0:
+            return "No bwrites set."
+        lines = "BWs:\n"
+        for i in range(len(self.breakonwrite)):
+            lines += f"{i}: {hex(self.breakonwrite[i])}\n"
+        
+        return lines
+    
+    def bread_info(self):
+        """Returns the current list of break on reads."""
+        if len(self.breakonread) == 0:
+            return "No breads set."
+        lines = "BRs:\n"
+        for i in range(len(self.breakonread)):
+            lines += f"{i}: {hex(self.breakonread[i])}"
+
+        return lines
+
+    def info(self, cmd_list):
+        """Returns the requested info page."""
+        if len(cmd_list) < 2:
+            return self.cpu_info()
+        choice = cmd_list[1].lower()
+        if choice in ['cpu', 'c', 'reg', 'r']:
+            return self.cpu_info()
+        elif choice in ['break', 'bp', 'b']:
+            return self.bp_info()
+        elif choice in ['bwrite', 'bw']:
+            return self.bwrite_info()
+        elif choice in ['bread', 'br']:
+            return self.bread_info()
+        else:
+            return "info pages: cpu, break, bwrite, bread"
 
     def show_last_four(self):
         """Print a disassembly context (last 4 instructions)"""
         for addr in self.cpu.last_four:
             mem = self.cpu.get_memory(addr, 3)
-            print hex(addr) + " " + disasm(mem, 1)[0]
+            print(hex(addr) + " " + disasm(mem, 1)[0])
 
     def step_cpu(self):
         """Step the CPU forward one instruction."""
         next_addr = self.cpu.step()
         mem = self.cpu.get_memory(next_addr, 3)
 
-        print hex(next_addr) + " " + disasm(mem, 1)[0] + "\t\tA: " + hex(self.cpu.get_register('A')) + " X: " + hex(self.cpu.get_register('X')) + " Y: " + hex(self.cpu.get_register('Y')) + " P:" + hex(self.cpu.get_register('P')) + " S: " + hex(self.cpu.get_register('S'))
+        print(hex(next_addr) + " " + disasm(mem, 1)[0] + "\t\tA: " + hex(self.cpu.get_register('A')) + " X: " + hex(self.cpu.get_register('X')) + " Y: " + hex(self.cpu.get_register('Y')) + " P:" + hex(self.cpu.get_register('P')) + " S: " + hex(self.cpu.get_register('S')))
 
     def get_arg(self, arg_string):
         """Decode a debugger command argument from string to, e.g., int"""
+
+        oper_split = re.split("([+-])", arg_string)
+        if len(oper_split) > 1 and len(oper_split):
+            sum_arg = self.get_arg(oper_split[0])
+            for i in range(1, len(oper_split), 2):
+                if i+1 > len(oper_split): break
+                if oper_split[i] == '+':
+                    sum_arg += self.get_arg(oper_split[i+1])
+                elif oper_split[i] == '-':
+                    sum_arg -= self.get_arg(oper_split[i-1])
+            return sum_arg
+        
+        arg_string = oper_split[0]
+
         # if a register, get the value
         registers = {
             'A': self.cpu.get_register('A'),
@@ -78,9 +140,9 @@ class NesDebugger(object):
             'S': self.cpu.get_register('S') + 0x0100
             }
         for key in registers:
-            if key in arg_string:
+            if key == arg_string.upper():
                 return registers[key]
-
+            
         # if a length arg, remove the L and cast to hex int
         if arg_string[0] == 'L':
             return int(arg_string[1:], 16)
@@ -106,7 +168,7 @@ class NesDebugger(object):
     def display_memory(self, cmd_list):
         """Print a specified amount of memory at the specified address"""
         if len(cmd_list) < 2:
-            print "display memory: d <address> [opt: 'L'ength]"
+            print("display memory: d <address> [opt: 'L'ength]")
             return
 
         line_len = 0x10
@@ -131,7 +193,7 @@ class NesDebugger(object):
     def disasm_memory(self, cmd_list):
         """Disassemble a specified amount of memory at the specified address"""
         if len(cmd_list) < 2:
-            print "unassemble memory: u <address> [opt: 'L'ength]"
+            print("unassemble memory: u <address> [opt: 'L'ength]")
             return
 
         length = 0x8
@@ -143,7 +205,7 @@ class NesDebugger(object):
         mem = self.cpu.get_memory(address, length*3)
         lines = disasm(mem, length, address)
         for line in lines:
-            print line
+            print(line)
 
     def add_breakpoint(self, cmd_list):
         """Add a breakpoint."""
@@ -164,7 +226,7 @@ class NesDebugger(object):
 
         pc_start = int("0x" + log_lines[0].split()[0], 16)
         self.cpu.set_pc(pc_start)
-        print "Starting at " + hex(pc_start)
+        print("Starting at " + hex(pc_start))
 
         failed = False
         instruction = 1
@@ -186,22 +248,22 @@ class NesDebugger(object):
             self.step_cpu()
 
             if (a != self.cpu.get_register('A')):
-                print "A is wrong: " + hex(a)
+                print("A is wrong: " + hex(a))
                 failed = True
             if (x != self.cpu.get_register('X')):
-                print "X is wrong: " + hex(x)
+                print("X is wrong: " + hex(x))
                 failed = True
             if (y != self.cpu.get_register('Y')):
-                print "Y is wrong: " + hex(y)
+                print("Y is wrong: " + hex(y))
                 failed = True
             if (p != self.cpu.get_register('P')):
-                print "P is wrong: " + hex(p)
+                print("P is wrong: " + hex(p))
                 failed = True
             if (s != self.cpu.get_register('S')):
-                print "S is wrong: " + hex(s)
+                print("S is wrong: " + hex(s))
                 failed = True
             if (pc != self.cpu.get_register('PC')):
-                print "PC is wrong: " + hex(pc)
+                print("PC is wrong: " + hex(pc))
                 failed = True
 
             instruction += 1
@@ -216,27 +278,70 @@ class NesDebugger(object):
         else:
             self.cpu.set_pc(value)
 
+    def run_script(self, cmd_list):
+        """Loads and executes debugger commands from file."""
+        if len(cmd_list) < 2:
+            print("run script: script <filepath>")
+            return
+
+        file_path = cmd_list[1]
+        try:
+            with open(file_path, 'r') as file:
+                for line in file.readlines():
+                    if not line.startswith("#"):
+                        print('> ', end='')
+                    print(line, end='')
+                    self.handle_cmd(line)
+                file.close()
+        except FileNotFoundError:
+            print(f"{file_path} does not exist.")
+            return
+
     @staticmethod
     def print_help():
         """Print the debugger usage reference"""
-        print "help / ?\t\t - this message"
-        print "step / s\t\t - step one instruction"
-        print "info / i\t\t - show cpu registers"
-        print "go / g  \t\t - run the program until break"
-        print "display / d\t\t - display memory"
-        print "unasm / u\t\t - show instructions"
-        print "break/ bp\t\t - add breakpoint"
-        print "last / l\t\t - show last 4 instructions executed"
-        print "reset   \t\t - reset the cpu"
-        print "bwrite / bw\t\t - break on write"
-        print "bread / br\t\t - break on read"
-        print "reg / r\t\t\t - set register value"
-        print "test    \t\t\t - test execution against a log"
-        print "quit / q\t\t - quit debugger"
+        print("help / ?\t\t - this message")
+        print("step / s\t\t - step one instruction")
+        print("info / i\t\t - show info pages (cpu, bp, bw, br)")
+        print("go / g  \t\t - run the program until break")
+        print("display / d\t\t - display memory")
+        print("unasm / u\t\t - show instructions")
+        print("break/ bp\t\t - add breakpoint")
+        print("last / l\t\t - show last 4 instructions executed")
+        print("reset   \t\t - reset the cpu")
+        print("bwrite / bw\t\t - break on write")
+        print("bread / br\t\t - break on read")
+        print("screen\t\t\t - print screen to console")
+        print("reg / r\t\t\t - set register value")
+        print("test    \t\t\t - test execution against a log")
+        print("script \t\t\t - run a debugger script from a file")
+        print("quit / q\t\t - quit debugger")
 
-    def print_screen(self):
-        """Print the screen (?)"""
-        print self.cpu.ppu.screen
+    def print_screen(self, cmd_list):
+        """Print the screen to the console"""
+        screen = self.cpu.ppu.screen
+        xlines = self.cpu.ppu.xlines
+        ylines = self.cpu.ppu.ylines
+
+        # Create table of letter representations for bytes on screen (may change this to something consistent across states later)
+        unique = list(set(screen))
+        letters = {}
+        for i in range(len(unique)):
+            letters[unique[i]] = chr(0x41+i)
+
+        start_y = 0
+        end_y = ylines
+        if cmd_list[1]:
+            start_y = min(max(0, self.get_arg(cmd_list[1])), ylines)
+        if cmd_list[2]:
+            end_y = min(max(start_y, self.get_arg(cmd_list[2])), ylines)
+
+        for y in range(start_y, end_y):
+            print(f"y{y}")
+            print(''.join([letters[pixel] for pixel in screen[y*xlines:(y*xlines)+xlines]]))
+        print(f"Letter Key: {letters}")
+        if len(cmd_list) < 2:
+            print("print partial screen: screen <starty> <endy>")
 
     def handle_cmd(self, cmd_string):
         """Process a debugger command and dispatch to the appropriate subroutine."""
@@ -250,24 +355,24 @@ class NesDebugger(object):
             self.step_cpu()
 
         if cmd == 'info' or cmd == 'i':
-            print self.cpu_info()
+            print(self.info(cmd_list))
 
         if cmd == 'go' or cmd == 'g':
             try:
                 next_addr = \
                   self.cpu.run_to_break(self.breakpoints, self.breakonwrite, self.breakonread)
-            except StandardError:
+            except RuntimeError:
                 traceback.print_exc(file=sys.stdout)
                 code.interact(local=locals())
             mem = self.cpu.get_memory(next_addr, 3)
 
             if self.cpu.pause_reason != None:
-                print self.cpu.pause_reason
+                print(self.cpu.pause_reason)
                 self.cpu.pause_reason = None
             try:
-                print "\n" + hex(next_addr) + " " + disasm(mem, 1)[0]
+                print("\n" + hex(next_addr) + " " + disasm(mem, 1)[0])
             except IndexError:
-                print hex(next_addr) + " " + hex(mem[0])
+                print(hex(next_addr) + " " + hex(mem[0]))
 
         if cmd == 'display' or cmd == 'd':
             self.display_memory(cmd_list)
@@ -276,7 +381,7 @@ class NesDebugger(object):
             self.disasm_memory(cmd_list)
 
         if cmd == 'screen':
-            self.print_screen()
+            self.print_screen(cmd_list)
 
         if cmd == 'bp' or cmd == 'break':
             self.add_breakpoint(cmd_list)
@@ -298,13 +403,15 @@ class NesDebugger(object):
         if cmd == 'test':
             self.test_log(cmd_list)
 
+        if cmd == 'script':
+            self.run_script(cmd_list)
+
     def debug_loop(self):
         """Main event loop of debugger."""
         cmd = ''
         while 1:
-            sys.stdout.write("> ")
             last_cmd = cmd
-            cmd = sys.stdin.readline().strip()
+            cmd = input('> ').strip()
             if cmd == '':
                 cmd = last_cmd
             if cmd == 'quit' or cmd == 'q':

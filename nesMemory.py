@@ -10,10 +10,10 @@ class Memory(object):
         # 7FF - 4000 and 6000+ isnt even used
         self.memory = 0x8000 * [0]
 
-    def ClearMemory(self):
+    def clear_memory(self):
         self.memory = 0x8000 * [0]
 
-    def AddressTranslation(self, cpu, address):
+    def address_translation(self, cpu, address):
         # handle basic mirroring here
         if address > 0x7FF and address < 0x2000:
             address &= 0x7FF
@@ -31,29 +31,34 @@ class Memory(object):
         # dont have to copy to base memory, and can pass their
         # own blocks
         if address > 0x10000:
-            print "WTF??? Read @ " + hex(address)
+            print("WTF??? Read @ " + str(hex(address)))
 
         return (self.memory, address)
 
 
-    def ReadMemory(self, cpu, address):
-        (mem, addr) = self.AddressTranslation(cpu, address)
+    def read_memory(self, cpu, address):
+        (mem, addr) = self.address_translation(cpu, address)
 
         # Read from PPU registers
         if mem is None:
-            return cpu.ppu.GetRegister(addr)
+            return cpu.ppu.get_register(addr)
 
         return mem[addr]
 
-    def SetMemory(self, cpu, address, value):
-        (mem, addr) = self.AddressTranslation(cpu, address)
-
+    def set_memory(self, cpu, address, value):
+        (mem, addr) = self.address_translation(cpu, address)
+        
         # Write to PPU registers
         if mem is None:
-            return cpu.ppu.SetRegister(addr, value)
+            return cpu.ppu.set_register(addr, value)
 
         if address == cpu.spr_dma:
-            cpu.ppu.SpriteDMA(value)
+            cpu.ppu.sprite_dma(value)
 
         mem[addr] = value & 0xFF
         return value & 0xFF
+    
+    def set_memory_debug(self, cpu, address, value):
+        # No checks, SEND IT (I trust you <3)
+        self.memory[address] = value
+        return value

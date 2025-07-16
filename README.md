@@ -1,14 +1,14 @@
-# refNes: NES reference implementation in python2
+# refNes: NES reference implementation in python3
 
 To run:
 
-`python debugger.py <rom path>`
+`python3 debugger.py <rom path>`
 
 then type 'g'
 
 '?' will show you debugger commands
 
-Todo:
+## TODO
 
 - [X] finish instructions
 - [X] unit tests
@@ -20,12 +20,17 @@ Todo:
 - [] speed up cpu and ppu
 - [] sort out instruction timing
 
-## Supported Platforms
+## Python3 Changes
+- Converted all syntax to be compatible with Python3.
+- Cleaned up function and variable names to be consistent in case.
+- Expanded debugger.
+    - Operations in arguments (Ex: `d PC+0x04`)
+    - Debugger scripts (Ex: `script set_breakpoints`)
+    - Better screen printing to console
+    - Whatever else comes to mind...
+- Utilizing PixelArray from pygame for drawing to the display surface.
+- Miscellaneous stuff I forgot.
 
-Tested with:
-
-- Python 2.7.10 on macOS 10.13.2
-- Python 2.7.14 on macOS 10.13.2
 
 ## Installing Dependencies
 

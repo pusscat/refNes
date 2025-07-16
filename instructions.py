@@ -28,40 +28,40 @@ class Instruction(object):
 # instruction functions return True if they modify PC
 # return false otherwise
 
-def GetValue(cpu, instruction):
+def get_value(cpu, instruction):
     operType = instruction.operType
-    if operType is 'IMM':
+    if operType == 'IMM':
         return cpu.read_rel_pc(1)
-    if operType is 'ZERO':
+    if operType == 'ZERO':
         return cpu.read_memory(cpu.read_rel_pc(1))
-    if operType is 'ZEROX':
+    if operType == 'ZEROX':
         # CANNOT CROSS PAGE BOUNDARY SO MASK READ ADDRESS
         return cpu.read_memory((cpu.read_rel_pc(1) + cpu.get_register('X')) & 0xFF)
-    if operType is 'ZEROY':
+    if operType == 'ZEROY':
         return cpu.read_memory((cpu.read_rel_pc(1) + cpu.get_register('Y')) & 0xFF)
-    if operType is 'ABS':
+    if operType == 'ABS':
         return cpu.read_memory((cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1))
-    if operType is 'ABSX': # THIS CAN CROSS PAGE BOUNDARY
+    if operType == 'ABSX': # THIS CAN CROSS PAGE BOUNDARY
         lowOrder = cpu.read_rel_pc(1) + cpu.get_register('X')
         hiOrder = cpu.read_rel_pc(2)
         if lowOrder > 0xFF:
             instruction.addCycles(1)
         return cpu.read_memory((hiOrder << 8) + lowOrder)
-    if operType is 'ABSY':
+    if operType == 'ABSY':
         lowOrder = cpu.read_rel_pc(1) + cpu.get_register('Y')
         if lowOrder > 0xFF:
             instruction.addCycles(1)
         return cpu.read_memory((cpu.read_rel_pc(2) << 8) + lowOrder)
-    if operType is 'INDX':
+    if operType == 'INDX':
         addrPtr = cpu.read_mem_word_bug((cpu.read_rel_pc(1) + cpu.get_register('X')) & 0xFF)
         return cpu.read_memory(addrPtr)
-    if operType is 'INDY':
+    if operType == 'INDY':
         lowOrder = cpu.read_mem_word_bug(cpu.read_rel_pc(1)) + cpu.get_register('Y')
         lowOrder = lowOrder & 0xFFFF
         if lowOrder > 0xFF:
             instruction.addCycles(1)
         return cpu.read_memory(lowOrder)
-    if operType is 'PCREL':
+    if operType == 'PCREL':
         pcReg = cpu.get_register('PC') + instruction.size
         # DO NOT & lo with 0xFF if pos - this can traverse page boundaries
         offset = cpu.read_rel_pc(1)
@@ -69,29 +69,30 @@ def GetValue(cpu, instruction):
             return pcReg + offset
         else:
             return pcReg + offset - 0x100
-    return value
+    # Going to raise an exception instead of returning a non-global/exposed value var
+    raise ValueError
 
-def GetAddress(cpu, instruction):
+def get_address(cpu, instruction):
     operType = instruction.operType
-    if operType is 'ZERO':
+    if operType == 'ZERO':
         return cpu.read_rel_pc(1)
-    if operType is 'ZEROX':
+    if operType == 'ZEROX':
         return ((cpu.read_rel_pc(1) + cpu.get_register('X')) & 0xFF)
-    if operType is 'ZEROY':
+    if operType == 'ZEROY':
         return ((cpu.read_rel_pc(1) + cpu.get_register('Y')) & 0xFF)
-    if operType is 'ABS':
+    if operType == 'ABS':
         return (cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1)
-    if operType is 'ABSX':
+    if operType == 'ABSX':
         return (cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1) + cpu.get_register('X')
-    if operType is 'ABSY':
+    if operType == 'ABSY':
         return ((cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1) + cpu.get_register('Y')) & 0xFFFF
-    if operType is 'IND':
+    if operType == 'IND':
         addr = cpu.read_mem_word_bug((cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1))
         addr = addr & 0xFFFF
         return addr
-    if operType is 'INDX':
+    if operType == 'INDX':
         return cpu.read_mem_word_bug((cpu.read_rel_pc(1) + cpu.get_register('X')) & 0xFF)
-    if operType is 'INDY':
+    if operType == 'INDY':
         lowOrder = cpu.read_mem_word_bug(cpu.read_rel_pc(1)) + cpu.get_register('Y')
         lowOrder = lowOrder & 0xFFFF
         if lowOrder > 0xFF:
@@ -103,7 +104,7 @@ def GetAddress(cpu, instruction):
 
 
 def doAdc(cpu, instruction):
-    value = GetValue(cpu, instruction)
+    value = get_value(cpu, instruction)
     accuVal = cpu.get_register('A')
     carryVal = cpu.get_flag('C')
 
@@ -114,7 +115,7 @@ def doAdc(cpu, instruction):
     return False
 
 def doAnd(cpu, instruction):
-    value = GetValue(cpu, instruction)
+    value = get_value(cpu, instruction)
     accuVal = cpu.get_register('A')
 
     newVal = accuVal & value
@@ -124,7 +125,7 @@ def doAnd(cpu, instruction):
     return False
 
 def doAsl(cpu, instruction):
-    address = GetAddress(cpu, instruction)
+    address = get_address(cpu, instruction)
     memVal = cpu.read_memory(address)
 
     newVal = memVal << 1
@@ -138,7 +139,7 @@ def doAsl(cpu, instruction):
     return False
 
 def doAos(cpu, instruction):
-    address = GetAddress(cpu, instruction)
+    address = get_address(cpu, instruction)
     memVal = cpu.read_memory(address)
     aVal = cpu.get_register('A')
 
@@ -156,7 +157,7 @@ def doAos(cpu, instruction):
     return False
 
 def doRla(cpu, instruction):
-    address = GetAddress(cpu, instruction)
+    address = get_address(cpu, instruction)
     memVal = cpu.read_memory(address)
     aVal = cpu.get_register('A')
 
@@ -192,7 +193,7 @@ def doBranch(cpu, instruction, flag, value):
     if cpu.get_flag(flag) != value:
         return False
 
-    target = GetValue(cpu, instruction)
+    target = get_value(cpu, instruction)
     currPC = cpu.get_register('PC')
     cpu.set_pc(target)
 
@@ -214,7 +215,7 @@ def doBeq(cpu, instruction):
     return doBranch(cpu, instruction, 'Z', 1)
 
 def doBit(cpu, instruction):
-    value = GetValue(cpu, instruction)
+    value = get_value(cpu, instruction)
     accuVal = cpu.get_register('A')
 
     cpu.set_flag('N', (value>>7)&1)
@@ -266,7 +267,7 @@ def doClv(cpu, instruction):
     return False
 
 def doCmp(cpu, instruction):
-    value = GetValue(cpu, instruction)
+    value = get_value(cpu, instruction)
     accuVal = cpu.get_register('A')
 
     newVal = accuVal - value
@@ -279,7 +280,7 @@ def doCmp(cpu, instruction):
     return False
 
 def doCpx(cpu, instruction):
-    value = GetValue(cpu, instruction)
+    value = get_value(cpu, instruction)
     xVal = cpu.get_register('X')
 
     newVal = xVal - value
@@ -292,7 +293,7 @@ def doCpx(cpu, instruction):
     return False
 
 def doCpy(cpu, instruction):
-    value = GetValue(cpu, instruction)
+    value = get_value(cpu, instruction)
     yVal = cpu.get_register('Y')
 
     newVal = yVal - value
@@ -305,7 +306,7 @@ def doCpy(cpu, instruction):
     return False
 
 def doDec(cpu, instruction):
-    addrVal = GetAddress(cpu, instruction)
+    addrVal = get_address(cpu, instruction)
     memVal = cpu.read_memory(addrVal)
 
     newVal = memVal - 1
@@ -327,7 +328,7 @@ def doDey(cpu, instruction):
 
 def doEor(cpu, instruction):
     aVal = cpu.get_register('A')
-    value = GetValue(cpu, instruction)
+    value = get_value(cpu, instruction)
 
     newVal = aVal ^ value
     cpu.set_register('A', newVal)
@@ -335,7 +336,7 @@ def doEor(cpu, instruction):
     return False
 
 def doInc(cpu, instruction):
-    addrVal = GetAddress(cpu, instruction)
+    addrVal = get_address(cpu, instruction)
     memVal = cpu.read_memory(addrVal)
 
     newVal = (memVal + 1) & 0xFF
@@ -356,25 +357,25 @@ def doIny(cpu, instruction):
     return False
 
 def doJmp(cpu, instruction):
-    addr = GetAddress(cpu, instruction)
+    addr = get_address(cpu, instruction)
     cpu.set_pc(addr)
     return True # PC changed by this instruction
 
 def doJsr(cpu, instruction):
-    addr = GetAddress(cpu, instruction)
+    addr = get_address(cpu, instruction)
     cpu.push_word(cpu.get_register('PC') + instruction.size - 1)
     cpu.set_pc(addr)
     return True # PC changed by this instruction
 
 def doLda(cpu, instruction):
-    value = GetValue(cpu, instruction)
+    value = get_value(cpu, instruction)
     aVal = cpu.get_register('A')
     cpu.set_register('A', value)
     cpu.ctrl_update_flags(instruction.flags, aVal, value, value, False)
     return False
 
 def doLdx(cpu, instruction):
-    value = GetValue(cpu, instruction)
+    value = get_value(cpu, instruction)
     xVal = cpu.get_register('X')
     cpu.set_register('X', value)
     cpu.ctrl_update_flags(instruction.flags, xVal, value, value, False)
@@ -382,7 +383,7 @@ def doLdx(cpu, instruction):
 
 
 def doLax(cpu, instruction):
-    value = GetValue(cpu, instruction)
+    value = get_value(cpu, instruction)
     xVal = cpu.get_register('X')
     cpu.set_register('A', value)
     cpu.set_register('X', value)
@@ -390,7 +391,7 @@ def doLax(cpu, instruction):
     return False
 
 def doSax(cpu, instruction):
-    value = GetValue(cpu, instruction)
+    value = get_value(cpu, instruction)
     xVal = cpu.get_register('X')
     aVal = cpu.get_register('A')
 
@@ -400,7 +401,7 @@ def doSax(cpu, instruction):
     return False
 
 def doAxs(cpu, instruction):
-    addr = GetAddress(cpu, instruction)
+    addr = get_address(cpu, instruction)
     xVal = cpu.get_register('X')
     aVal = cpu.get_register('A')
 
@@ -409,7 +410,7 @@ def doAxs(cpu, instruction):
     return False
 
 def doLdy(cpu, instruction):
-    value = GetValue(cpu, instruction)
+    value = get_value(cpu, instruction)
     yVal = cpu.get_register('Y')
     cpu.set_register('Y', value)
     cpu.ctrl_update_flags(instruction.flags, yVal, value, value, False)
@@ -425,7 +426,7 @@ def doLsrAcc(cpu, instruction):
     return False
 
 def doLsr(cpu, instruction):
-    address = GetAddress(cpu, instruction)
+    address = get_address(cpu, instruction)
     value = cpu.read_memory(address)
     newVal = value >> 1
     cpu.set_memory(address, newVal)
@@ -436,7 +437,7 @@ def doLsr(cpu, instruction):
 
 def doLse(cpu, instruction):
     aVal = cpu.get_register('A')
-    address = GetAddress(cpu, instruction)
+    address = get_address(cpu, instruction)
     value = cpu.read_memory(address)
     newVal = value >> 1
     cpu.set_memory(address, newVal)
@@ -452,7 +453,7 @@ def doNop(cpu, instruction):
     return False
 
 def doOra(cpu, instruction):
-    value = GetValue(cpu, instruction)
+    value = get_value(cpu, instruction)
     aVal = cpu.get_register('A')
 
     newVal = aVal | value
@@ -491,7 +492,7 @@ def doRolAcc(cpu, instruction):
     return False
 
 def doRol(cpu, instruction):
-    addr = GetAddress(cpu, instruction)
+    addr = get_address(cpu, instruction)
     value = cpu.read_memory(addr)
     oldC = cpu.get_flag('C')
     newC = 1 if (value & 0x80) else 0
@@ -512,7 +513,7 @@ def doRorAcc(cpu, instruction):
     return False
 
 def doRor(cpu, instruction):
-    addr = GetAddress(cpu, instruction)
+    addr = get_address(cpu, instruction)
     value = cpu.read_memory(addr)
     oldC = cpu.get_flag('C')
     newC = 1 if (value & 0x1) else 0
@@ -523,7 +524,7 @@ def doRor(cpu, instruction):
     return False
 
 def doRra(cpu, instruction):
-    addr = GetAddress(cpu, instruction)
+    addr = get_address(cpu, instruction)
     aVal = cpu.get_register('A')
     value = cpu.read_memory(addr)
     oldC = cpu.get_flag('C')
@@ -551,7 +552,7 @@ def doRts(cpu, instruction):
 
 def doSbc(cpu, instruction):
     aVal = cpu.get_register('A')
-    value = GetValue(cpu, instruction)
+    value = get_value(cpu, instruction)
     cVal = cpu.get_flag('C')
 
     newVal = aVal - value - (1-cVal)
@@ -562,8 +563,8 @@ def doSbc(cpu, instruction):
 
 def doIns(cpu, instruction):
     aVal = cpu.get_register('A')
-    value = GetValue(cpu, instruction) + 1
-    addr = GetAddress(cpu, instruction)
+    value = get_value(cpu, instruction) + 1
+    addr = get_address(cpu, instruction)
     cVal = cpu.get_flag('C')
 
     newVal = aVal - value - (1-cVal)
@@ -587,21 +588,21 @@ def doSei(cpu, instruction):
 
 def doSta(cpu, instruction):
     aVal = cpu.get_register('A')
-    addr = GetAddress(cpu, instruction)
+    addr = get_address(cpu, instruction)
 
     cpu.set_memory(addr, aVal)
     return False
 
 def doStx(cpu, instruction):
     xVal = cpu.get_register('X')
-    addr = GetAddress(cpu, instruction)
+    addr = get_address(cpu, instruction)
 
     cpu.set_memory(addr, xVal)
     return False
 
 def doSty(cpu, instruction):
     yVal = cpu.get_register('Y')
-    addr = GetAddress(cpu, instruction)
+    addr = get_address(cpu, instruction)
 
     cpu.set_memory(addr, yVal)
     return False
@@ -649,8 +650,8 @@ def doTya(cpu, instruction):
     return False
 
 def doDcm(cpu, instruction):
-    addr = GetAddress(cpu, instruction)
-    value = (GetValue(cpu, instruction) - 1)
+    addr = get_address(cpu, instruction)
+    value = (get_value(cpu, instruction) - 1)
     aVal = cpu.get_register('A')
    
     newVal = aVal - value

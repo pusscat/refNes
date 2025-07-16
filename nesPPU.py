@@ -67,14 +67,14 @@ class PPU():
         self.latch_lo = 0
         self.latch_hi = 0
 
-    def GetPC(self):
+    def get_pc(self):
         return self.cpu.get_register('PC')
 
-    def GetRegister(self, addr):
+    def get_register(self, addr):
         #print "Get Register " + hex(addr) + ": " + hex(self.registers[addr])
         return self.registers[addr] 
 
-    def SetRegister(self, addr, value):
+    def set_register(self, addr, value):
         #if addr == self.sprAddr:
             #self.flipflop1 ^= 1
         if addr == self.sprData:
@@ -89,16 +89,16 @@ class PPU():
             self.flipflop0 ^= 1
         if addr == self.vramLatch:
             if self.flipflop1 == 0:
-                #print hex(self.GetPC()) + ": latch_lo = " + hex(value)
+                #print hex(self.get_pc()) + ": latch_lo = " + hex(value)
                 self.latch_lo = value
             else:
-                #print hex(self.GetPC()) + ": latch_hi = " + hex(value)
+                #print hex(self.get_pc()) + ": latch_hi = " + hex(value)
                 self.latch_hi = value
             self.flipflop1 ^= 1
         if addr == self.vramData:
             storAddr = self.latch_lo + (self.latch_hi << 8)
-            self.SetMemory(storAddr, value)
-            if self.GetVWrite() == 1:
+            self.set_memory(storAddr, value)
+            if self.get_vwrite() == 1:
                 storAddr += 32
             else:
                 storAddr += 1
@@ -111,49 +111,49 @@ class PPU():
         self.registers[addr] = value & 0xFF
         return value & 0xFF
 
-    def SpriteDMA(self, value):
+    def sprite_dma(self, value):
         for i in range(0, 0x100):
             self.sprMemory[i] = self.cpu.read_memory((value << 8)+i)
 
-    def GetVWrite(self):
+    def get_vwrite(self):
         return (self.registers[self.ctrl1] >> 2) & 1
 
-    def GetVBlank(self):
+    def get_vblank(self):
         return (self.registers[self.status] >> 7) & 1
 
-    def SetVBlank(self):
+    def set_vblank(self):
         #status = self.registers[self.status]
         self.registers[self.status] |=  0x80
 
-    def ClearVBlank(self):
+    def clear_vblank(self):
         #status = self.registers[self.status]
         self.registers[self.status] &= 0x7F
 
-    def GetNMIMask(self):
+    def get_nmi_mask(self):
         return (self.registers[self.ctrl1] >> 7) & 1
 
-    def GetHit(self):
+    def get_hit(self):
         return (self.registers[self.status] >> 6) &1
 
-    def GetImgMask(self):
+    def get_img_mask(self):
         return (self.registers[self.ctrl2] >> 1) &1
 
-    def GetSprMask(self):
+    def get_spr_mask(self):
         return (self.registers[self.ctrl2] >> 2) &1
 
-    def GetScreenEnable(self):
+    def get_screen_enable(self):
         return (self.registers[self.ctrl2] >> 3) &1
 
-    def GetSprEnable(self):
+    def get_spr_enable(self):
         return (self.registers[self.ctrl2] >> 4) &1
 
-    def GetSprTable(self):
+    def get_spr_table(self):
         return (self.registers[self.ctrl1] >> 3) &1
 
-    def GetBGTable(self):
+    def get_bg_table(self):
         return (self.registers[self.ctrl1] >> 4) &1
 
-    def AddressTranslation(self, addr):
+    def address_translation(self, addr):
         if addr < self.nameTable0:  # mapped by mapper in cart
             return self.cpu.map_vmem(addr)
 
@@ -178,7 +178,7 @@ class PPU():
 
         return (self.memory, addr)
 
-    def MarkDirty(self, address):
+    def mark_dirty(self, address):
         self.dirtyVram = 1
         base = (((address % 0x800)/0x400)*(32*30))
         if (address % 0x400) < 0x3c0:
@@ -191,28 +191,35 @@ class PPU():
                 for xs in range(x, x+4):
                     self.vramWrites[base + xs + (ys * 32)] = 1
 
-    def ReadMemory(self, address):
-        (mem, addr) = self.AddressTranslation(address)
+    def read_memory(self, address):
+        (mem, addr) = self.address_translation(address)
         return mem[addr]
 
-    def SetMemory(self, address, value):
-        (mem, addr) = self.AddressTranslation(address)
+    def set_memory(self, address, value):
+        (mem, addr) = self.address_translation(address)
         
         if addr >= 0x3F10 and addr < 0x3F20:
             self.lastBGWrite = value
 
         if addr >= self.nameTable0 and addr < self.nameTableEnd:
-            self.MarkDirty(address)
+            self.mark_dirty(address)
+        
+        try:
+            mem[addr] = value & 0xFF
+            return value & 0xFF
+        except IndexError as e:
+            self.cpu.paused = True
+            self.cpu.pause_reason = f"PPU OOB write @ {hex(addr)} ({hex(value&0xFF)})"
+            breakpoint()
+            return 0x0
+        
 
-        mem[addr] = value & 0xFF
-        return value & 0xFF
-
-    def DrawBackground(self):
+    def draw_background(self):
         return 
 
         q = 0
         for y in range(0, self.ylines):
-            ntable = self.ReadMemory(self.nameTable0 + y)
+            ntable = self.read_memory(self.nameTable0 + y)
             ry = self.scroll_y + y
             name_y = ry % self.ylines
 
@@ -228,8 +235,8 @@ class PPU():
                 q += 1
                 rx += 1
 
-    def DrawSprites(self):
-        if self.GetSprTable() != 0:
+    def draw_sprites(self):
+        if self.get_spr_table() != 0:
             tableIndex = 0x1000
         else:
             tableIndex = 0x0000
@@ -257,26 +264,26 @@ class PPU():
                             vo = 7 - (y - sy)
 
                         addr = tableIndex + (p*0x10) + vo
-                        c  = ((self.ReadMemory(addr)>>ho)&1)
-                        c |= ((self.ReadMemory(addr+8)>>ho)&1)<<1
+                        c  = ((self.read_memory(addr)>>ho)&1)
+                        c |= ((self.read_memory(addr+8)>>ho)&1)<<1
                         c |= hi << 2
 
                         if c & 3 == 0:
                             dat = 0
                         else:
-                            dat = self.ReadMemory(self.paletteIndex + c)
+                            dat = self.read_memory(self.paletteIndex + c)
                         
                         if dat != 0:
                             if pr == 0:
-                                screen[x+(y*self.xlines)] = dat
+                                self.screen[x+(y*self.xlines)] = dat
                             else:
-                                if screen[x+(y*self.xlines)] == 0x40:
-                                    screen[x+(y*self.xlines)] = dat
+                                if self.screen[x+(y*self.xlines)] == 0x40:
+                                    self.screen[x+(y*self.xlines)] = dat
                     
 
 
-    def DrawNametable(nameTable, xTile, yTile):
-        if self.GetBGTable != 0:
+    def draw_nametable(self, nameTable, xTile, yTile):
+        if self.get_bg_table != 0:
             tableIndex = 0x1000
         else:
             tableIndex = 0
@@ -292,18 +299,18 @@ class PPU():
                 addr = (((name_x%32) + (name_y%32) * 32))
                 addr += nameTable * 0x400
 
-                p = self.ReadMemory(self.nameTable0 + addr)
+                p = self.read_memory(self.nameTable0 + addr)
 
                 cIndex = tableIndex + (p*16) + sy
-                c = (self.ReadMemory(cIndex) >> (7 - sx)) & 1
-                c |= (self.ReadMemory(cIndex+8) >> (7 - sx)) << 1
+                c = (self.read_memory(cIndex) >> (7 - sx)) & 1
+                c |= (self.read_memory(cIndex+8) >> (7 - sx)) << 1
 
                 name_x = x/32
                 name_y = y/32
                 addr = ((name_x % 8) + ((name_7 % 8) * 8)) + 0x3c0
                 addr += nameTable * 0x400
 
-                p = self.ReadMemory(self.nameTable0 + addr)
+                p = self.read_memory(self.nameTable0 + addr)
 
                 name_x = (x / 16) % 2
                 name_y = (y / 16) % 2
@@ -311,52 +318,52 @@ class PPU():
                 c |= ((p >> 2 * (name_x + (name_y << 1))) & 3) << 2
                 self.nt[x + (y * self.xlines) + (nameTable * (self.xlines * self.ylines))] = c
 
-    def BlankScreen(self):
+    def blank_screen(self):
         self.screen = [0x00] * (self.xlines * self.ylines)
 
-    def UpdateFrame(self):
-        if self.GetScreenEnable() != 0:
-            self.BlankScreen()
+    def update_frame(self):
+        if self.get_screen_enable() != 0:
+            self.blank_screen()
         else:
-            self.DrawBackground()
+            self.draw_background()
 
-        if self.GetSprEnable() != 0:
-            self.DrawSprites()
+        if self.get_spr_enable() != 0:
+            self.draw_sprites()
 
-        if self.dirtyVram != 0 and self.GetScreenEnable() != 0:
+        if self.dirtyVram != 0 and self.get_screen_enable() != 0:
             self.dirtyVram = 0
             for i in range(0, (32*30*2)):
                 if self.vramWrites[i] != 0:
-                    self.DrawNameTable(i/(32*30), i%32, (i%(32*30))/32)
+                    self.draw_nametable(i/(32*30), i%32, (i%(32*30))/32)
                     self.vramWrites[i] = 0
 
 
-    def stepPPU(self):
+    def step_ppu(self):
         # each step draws one pix, but updates only on hblank
-        #self.renderer.Update(self.screen, self.tube_x, self.tube_y)
+        #self.renderer.update(self.screen, self.tube_x, self.tube_y)
         self.tube_x += 1
         if self.tube_x == self.xlines:
             self.tube_x = 0
             self.tube_y += 1
             self.hblank = 1
             if self.tube_y < self.ylines:
-                self.renderer.Update(self.screen, self.tube_y)
+                self.renderer.update(self.screen, self.tube_y)
             if self.tube_y == self.ylines:
-                self.SetVBlank()
-                if self.GetNMIMask() == 1:
+                self.set_vblank()
+                if self.get_nmi_mask() == 1:
                     self.nmi = 1
                     self.cpu.nmi_flipflop = 1
         if self.tube_y == (self.ylines + 21):
             self.tube_y = 0
-            self.ClearVBlank()
+            self.clear_vblank()
             self.nmi = 0
             self.cpu.nmi_flipflop = 1
 
 
-    def runPPU(self, numCPUCycles):
+    def run_ppu(self, numCPUCycles):
         # we get to run 3 PPU cycles for every 1 CPU cycle
         # we step the CPU first, then based on how long the 
         # instruction took, we step the PPU 3x that number
-        self.UpdateFrame()
+        self.update_frame()
         for i in range(0, numCPUCycles*3):
-            self.stepPPU()
+            self.step_ppu()

@@ -18,15 +18,15 @@ class Mapper:
             self.bank2 = rom.romBanks[0]
         self.vbank = rom.vromBanks[0]
 
-    def mapMem(self, cpu, address):
+    def map_mem(self, cpu, address):
         if address >= self.bank1Start and address < self.bank1End:
             return (self.bank1, address - self.bank1Start)
         if address >= self.bank2Start and address < self.bank2End:
             return (self.bank2, address - self.bank2Start)
       
-    def mapVMem(self, cpu, address):
+    def map_vmem(self, cpu, address):
         return (self.vbank, address)
 
-    def ReadVMemory(self, cpu, address):
+    def read_vmemory(self, cpu, address):
         # XXX - This is probably wrong
         return self.vbank[address]

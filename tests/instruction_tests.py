@@ -16,13 +16,13 @@ class TestADC(unittest.TestCase):
     def testAdcImm(self):
         cpu = MOS6502.CPU()
         instruction_bytes = [0x69, 0xA1] # ADC 0x41
-        cpu.initMemory(cpu.programRom, instruction_bytes)
+        cpu.set_memory_debug(cpu.get_register('PC')+1, instruction_bytes)
 
-        cpu.SetRegister('A', 0xA1)
+        cpu.set_register('A', 0xA1)
         cpu.step()
 
-        self.assertEqual(cpu.GetRegister('A'), 0x42)
-        self.assertEqual(cpu.GetFlag('C'), 1)
+        self.assertEqual(cpu.get_register('A'), 0x42)
+        self.assertEqual(cpu.get_flag('C'), 1)
 
 if __name__ == '__main__':
     unittest.main()

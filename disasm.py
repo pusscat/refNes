@@ -9,7 +9,7 @@ def disasm(memory, maxLines=0, address=-1):
     while index < len(memory):
         opcode = memory[index]
         if opcode not in instructions.instructions.keys():
-            print "Undefined opcode: " + hex(opcode)
+            print("Undefined opcode: " + str(hex(opcode)))
             code.interact(local=locals())
 
         currInst = instructions.instructions[memory[index]]

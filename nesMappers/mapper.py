@@ -8,11 +8,11 @@ class Mapper:
         self.mapperModule = importlib.import_module(self.mapperName)
         self.mapper = self.mapperModule.Mapper(cpu, rom)
 
-    def mapMem(self, cpu, address):
-        return self.mapper.mapMem(cpu, address)
+    def map_mem(self, cpu, address):
+        return self.mapper.map_mem(cpu, address)
     
-    def mapVMem(self, cpu, address):
-        return self.mapper.mapVMem(cpu, address)
+    def map_vmem(self, cpu, address):
+        return self.mapper.map_vmem(cpu, address)
 
-    def ReadVMemory(self, cpu, address):
-        return self.mapper.ReadVMemory(cpu, address)
+    def read_vmemory(self, cpu, address):
+        return self.mapper.read_vmemory(cpu, address)

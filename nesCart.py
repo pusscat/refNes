@@ -13,14 +13,15 @@ import mapper
 class Rom(object):
     def __init__(self, romPath, cpu):
         self.path = romPath
-        romData = open(romPath, 'rb').read()
+        with open(romPath, 'rb') as romFile:
+            romData = romFile.read()
 
         headerSize = 0x10
         bankSize = 0x4000
         vromBankSize = 0x2000
 
-        if "NES" not in romData[0:4]:
-            print "Unrecognized format!"
+        if b"NES" not in romData[0:4]:
+            print("Unrecognized format!")
             return None
         
         # byte 4 - number of 16kB ROM banks
@@ -62,7 +63,7 @@ class Rom(object):
             data = romData[index:index+bankSize]
             dataBytes = []
             for c in data:
-                dataBytes.append(struct.unpack('B', c)[0])
+                dataBytes.append(struct.unpack('B', bytes([c]))[0])
             self.romBanks.append(dataBytes)
             index += bankSize
 
@@ -71,18 +72,18 @@ class Rom(object):
             data = romData[index:index+vromBankSize]
             dataBytes = []
             for c in data:
-                dataBytes.append(struct.unpack('B', c)[0])
+                dataBytes.append(struct.unpack('B', bytes([c]))[0])
             self.vromBanks.append(dataBytes)
             index += vromBankSize
 
         # do this last so romBanks already exist ;)
         self.mapper = mapper.Mapper(cpu, self, self.mapperNum)
     
-    def mapMem(self, cpu, address):
-        return self.mapper.mapMem(cpu, address)
+    def map_mem(self, cpu, address):
+        return self.mapper.map_mem(cpu, address)
 
-    def mapVMem(self, cpu, address):
-        return self.mapper.mapVMem(cpu, address)
+    def map_vmem(self, cpu, address):
+        return self.mapper.map_vmem(cpu, address)
     
-    def ReadVMemory(self, cpu, address):
-        return self.mapper.ReadVMemory(cpu, address)
+    def read_vmemory(self, cpu, address):
+        return self.mapper.read_vmemory(cpu, address)
