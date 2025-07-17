@@ -126,7 +126,7 @@ class NesDebugger(object):
                 if oper_split[i] == '+':
                     sum_arg += self.get_arg(oper_split[i+1])
                 elif oper_split[i] == '-':
-                    sum_arg -= self.get_arg(oper_split[i-1])
+                    sum_arg -= self.get_arg(oper_split[i+1])
             return sum_arg
         
         arg_string = oper_split[0]
