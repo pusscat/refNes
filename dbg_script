@@ -1,4 +1,0 @@
-# This is an example debugger script
-bp PC+0x4
-info cpu
-info bp

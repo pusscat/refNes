@@ -1,6 +1,7 @@
 """
 Debugger: demonstrates the refNes core. Helpful in testing.
 """
+import os
 import sys
 import signal
 import traceback
@@ -408,6 +409,11 @@ class NesDebugger(object):
 
     def debug_loop(self):
         """Main event loop of debugger."""
+        if os.path.exists("./.dbginit"):
+            print("Running .dbginit script...")
+            self.run_script(["script", "./.dbginit"])
+            print("")
+            
         cmd = ''
         while 1:
             last_cmd = cmd
