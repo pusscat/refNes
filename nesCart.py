@@ -44,7 +44,7 @@ class Rom(object):
         self.vsSystem = flags7 & 1
         hiMapper = flags7 >> 4
 
-        self.mapperNum = hiMapper << 4 + lowMapper
+        self.mapperNum = hiMapper << (4 + lowMapper)
 
         # byte 8 - num 8kB RAM banks
         self.numRamBanks = flags8 if flags8 != 0 else 1
@@ -55,7 +55,7 @@ class Rom(object):
         index = headerSize
         if self.trainer == 1:
             self.trainerData = romData[index:index+512]
-            cpu.initMemory(0x7000, self.trainderData)
+            cpu.init_memory(0x7000, self.trainerData)
             index += 512
 
         self.romBanks = []

@@ -326,8 +326,6 @@ class CPU(object):
         instruction.execute(self)
         self.last_four.pop(0)
         self.last_four.append(addr)
-        self.cycle += instruction.cycles
-        self.global_cycle += instruction.cycles
         if self.cycle % 4 == 0:
             self.controllers.getInput()
 
