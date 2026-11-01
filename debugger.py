@@ -1,6 +1,7 @@
 """
 Debugger: demonstrates the refNes core. Helpful in testing.
 """
+import argparse
 import os
 import sys
 import signal
@@ -24,8 +25,10 @@ def signal_handler(signum, frame):
 
 class NesDebugger(object):
     """Command-line NES debugger"""
-    def __init__(self, rom_file):
+    def __init__(self, rom_file, scale=1, controls=None):
         self.cpu = MOS6502.CPU()
+        self.cpu.render_scale = scale
+        self.cpu.controls_path = controls
         self.cpu.load_rom(rom_file)
         self.cpu.reset()
         self.breakpoints = []
@@ -220,6 +223,44 @@ class NesDebugger(object):
         """Add a memory breakpoint (read)"""
         self.breakonread.append(self.get_arg(cmd_list[1]))
 
+    def set_scale(self, cmd_list):
+        """Show or change the window scale (decimal, 1 or more)."""
+        if len(cmd_list) < 2:
+            print(f"Scale: {self.cpu.render_scale}")
+            return
+        try:
+            scale = int(cmd_list[1], 10)
+        except ValueError:
+            scale = 0
+        if scale < 1:
+            print("scale: scale <N>  (N is a whole number, 1 or more)")
+            return
+        self.cpu.render_scale = scale     # kept for the PPU that 'reset' creates
+        self.cpu.ppu.renderer.set_scale(scale)
+        print(f"Scale: {scale} ({256*scale}x{240*scale})")
+
+    def set_show_fps(self, cmd_list):
+        """Turn the FPS overlay on or off; with no argument, toggle it."""
+        if len(cmd_list) > 1 and cmd_list[1].lower() in ['on', 'off']:
+            show = cmd_list[1].lower() == 'on'
+        else:
+            show = not self.cpu.show_fps
+        self.cpu.show_fps = show                  # kept for the PPU that 'reset' creates
+        self.cpu.ppu.renderer.show_fps = show
+        self.cpu.ppu.renderer.present()           # show/hide it right away
+        print("FPS display: " + ("on" if show else "off"))
+
+    def set_limit_speed(self, cmd_list):
+        """Turn the 60 fps speed limit on or off; with no argument, toggle it."""
+        if len(cmd_list) > 1 and cmd_list[1].lower() in ['on', 'off']:
+            limit = cmd_list[1].lower() == 'on'
+        else:
+            limit = not self.cpu.limit_speed
+        self.cpu.limit_speed = limit              # kept for the PPU that 'reset' creates
+        self.cpu.ppu.renderer.limit_speed = limit
+        self.cpu.ppu.renderer.next_frame = None   # restart the frame clock
+        print("Speed limit: " + ("on (60.1 fps)" if limit else "off (as fast as possible)"))
+
     def set_break_on_nmi(self, cmd_list):
         """Turn break-on-NMI on or off; with no argument, toggle it."""
         if len(cmd_list) > 1 and cmd_list[1].lower() in ['on', 'off']:
@@ -329,6 +370,9 @@ class NesDebugger(object):
         print("bwrite / bw\t\t - break on write")
         print("bread / br\t\t - break on read")
         print("bnmi [on|off]\t\t - break when an NMI is taken (no arg toggles)")
+        print("scale [N]\t\t - show or set the window scale (decimal N)")
+        print("fps [on|off]\t\t - show frames per second in the game window (no arg toggles)")
+        print("limit [on|off]\t\t - hold speed to 60.1 fps, or run as fast as possible (no arg toggles)")
         print("screen\t\t\t - print screen to console")
         print("reg / r\t\t\t - set register value")
         print("test    \t\t\t - test execution against a log")
@@ -410,6 +454,15 @@ class NesDebugger(object):
         if cmd == 'bnmi':
             self.set_break_on_nmi(cmd_list)
 
+        if cmd == 'scale':
+            self.set_scale(cmd_list)
+
+        if cmd == 'fps':
+            self.set_show_fps(cmd_list)
+
+        if cmd == 'limit':
+            self.set_limit_speed(cmd_list)
+
         if cmd == 'l' or cmd == 'last':
             self.show_last_four()
 
@@ -446,6 +499,16 @@ class NesDebugger(object):
 
 # Start here:
 if __name__ == "__main__":
-    DEBUG_SESSION = NesDebugger(sys.argv[1])
+    parser = argparse.ArgumentParser(description="refNes command-line debugger")
+    parser.add_argument("rom", help="path to an iNES (.nes) ROM")
+    parser.add_argument("-s", "--scale", type=int, default=1,
+                        help="window size multiplier (default 1 = 256x240)")
+    parser.add_argument("-c", "--controls", default=None,
+                        help="controller key config file (default: controls.cfg next to debugger.py)")
+    args = parser.parse_args()
+    if args.scale < 1:
+        parser.error("--scale must be 1 or more")
+
+    DEBUG_SESSION = NesDebugger(args.rom, args.scale, args.controls)
     signal.signal(signal.SIGINT, signal_handler)
     DEBUG_SESSION.debug_loop()

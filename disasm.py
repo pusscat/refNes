@@ -1,6 +1,5 @@
 import MOS6502
 import instructions
-import code
 
 def disasm(memory, maxLines=0, address=-1):
     index = 0
@@ -8,16 +7,26 @@ def disasm(memory, maxLines=0, address=-1):
 
     while index < len(memory):
         opcode = memory[index]
-        if opcode not in instructions.instructions.keys():
-            print("Undefined opcode: " + str(hex(opcode)))
-            code.interact(local=locals())
-
-        currInst = instructions.instructions[memory[index]]
-        
-        if address > 0:
-            line = format(address+index, '04x') + ": "
+        if address >= 0:
+            prefix = format(address+index, '04x') + ": "
         else:
-            line = ''
+            prefix = ''
+
+        currInst = instructions.instructions.get(opcode)
+        # Unknown opcode (data, or a start address in the middle of an
+        # instruction): show the byte as data and move on one byte.
+        if currInst is None:
+            lines.append(prefix + ".db " + hex(opcode))
+            index += 1
+            if maxLines != 0 and len(lines) == maxLines:
+                return lines
+            continue
+
+        # operand bytes run past the end of what we were given: stop here
+        if index + currInst.size > len(memory):
+            break
+
+        line = prefix
         line += currInst.mnem + " "
         line += currInst.operType + " "
         if currInst.size > 1:

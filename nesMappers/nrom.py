@@ -18,6 +18,14 @@ class Mapper:
             self.bank2 = rom.romBanks[0]
         self.vbank = rom.vromBanks[0]
 
+        # $8000-$FFFF as four 8KB windows, read directly by the CPU's fast path
+        self.prg_windows = [self.bank1[:0x2000], self.bank1[0x2000:],
+                            self.bank2[:0x2000], self.bank2[0x2000:]]
+
+    def write_prg(self, cpu, address, value):
+        # NROM has no registers; writes to ROM are ignored
+        pass
+
     def map_mem(self, cpu, address):
         if address >= self.bank1Start and address < self.bank1End:
             return (self.bank1, address - self.bank1Start)
@@ -28,5 +36,4 @@ class Mapper:
         return (self.vbank, address)
 
     def read_vmemory(self, cpu, address):
-        # XXX - This is probably wrong
         return self.vbank[address]

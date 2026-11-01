@@ -11,7 +11,8 @@ class Memory(object):
         self.memory = 0x8000 * [0]
 
     def clear_memory(self):
-        self.memory = 0x8000 * [0]
+        # clear in place: the CPU keeps a direct reference to this list
+        self.memory[:] = 0x8000 * [0]
 
     def address_translation(self, cpu, address):
         # handle basic mirroring here
@@ -37,10 +38,15 @@ class Memory(object):
 
 
     def read_memory(self, cpu, address):
+        # Controller ports
+        if address == cpu.ctrl1 or address == cpu.ctrl2:
+            return cpu.controllers.read(address - cpu.ctrl1)
+
         (mem, addr) = self.address_translation(cpu, address)
 
-        # Read from PPU registers
+        # Read from PPU registers (bring the PPU up to date first)
         if mem is None:
+            cpu.sync_ppu()
             return cpu.ppu.get_register(addr)
 
         return mem[addr]
@@ -48,12 +54,25 @@ class Memory(object):
     def set_memory(self, cpu, address, value):
         (mem, addr) = self.address_translation(cpu, address)
         
-        # Write to PPU registers
+        # Write to PPU registers (bring the PPU up to date first)
         if mem is None:
+            cpu.sync_ppu()
             return cpu.ppu.set_register(addr, value)
 
+        # Cartridge space: ROM can't be written; mappers use these writes as registers
+        # (which can switch graphics banks, so the PPU is brought up to date first)
+        if address >= 0x8000:
+            cpu.sync_ppu()
+            cpu.rom.mapper.write_prg(cpu, address, value & 0xFF)
+            return value & 0xFF
+
         if address == cpu.spr_dma:
+            cpu.sync_ppu()
             cpu.ppu.sprite_dma(value)
+
+        # Controller strobe ($4017 writes go to the APU, which isn't emulated yet)
+        if address == cpu.ctrl1:
+            cpu.controllers.write(value)
 
         mem[addr] = value & 0xFF
         return value & 0xFF

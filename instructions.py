@@ -1,6 +1,28 @@
 """
 instructions: the semantic functions for the emulation of 6502 instructions.
+
+Registers are plain ints on the CPU (cpu.a, cpu.x, cpu.y, cpu.s, cpu.p, cpu.pc).
+Flags live in cpu.p as bits; N and Z come from the NZ table.
 """
+
+# status register bits
+C_FLAG = 0x01   # carry
+Z_FLAG = 0x02   # zero
+I_FLAG = 0x04   # interrupt disable
+D_FLAG = 0x08   # decimal
+B_FLAG = 0x10   # break
+U_FLAG = 0x20   # unused, always reads 1
+V_FLAG = 0x40   # overflow
+N_FLAG = 0x80   # negative
+
+# NZ[v] is the N and Z bits for the 8-bit result v
+NZ = [(Z_FLAG if v == 0 else 0) | (v & N_FLAG) for v in range(256)]
+
+NZ_CLEAR = 0xFF & ~(N_FLAG | Z_FLAG)                     # keep everything but N, Z
+NZC_CLEAR = 0xFF & ~(N_FLAG | Z_FLAG | C_FLAG)
+NZCV_CLEAR = 0xFF & ~(N_FLAG | Z_FLAG | C_FLAG | V_FLAG)
+NZV_CLEAR = 0xFF & ~(N_FLAG | Z_FLAG | V_FLAG)
+
 
 class Instruction(object):
     def __init__(self, mnem, function, operType, size, cycles):
@@ -13,6 +35,9 @@ class Instruction(object):
         self.cycles = cycles
         self.extraCycles = 0
         self.size = size
+        # addressing-mode functions for this opcode, chosen once here
+        self.value = VALUE_MODES.get(operType, no_value)
+        self.address = ADDRESS_MODES.get(operType, no_address)
 
     def execute(self, cpu):
         # emulate the instruction and add instruction size to PC
@@ -28,640 +53,563 @@ class Instruction(object):
 # instruction functions return True if they modify PC
 # return false otherwise
 
-def get_value(cpu, instruction):
-    operType = instruction.operType
-    if operType == 'IMM':
-        return cpu.read_rel_pc(1)
-    if operType == 'ZERO':
-        return cpu.read_memory(cpu.read_rel_pc(1))
-    if operType == 'ZEROX':
-        # CANNOT CROSS PAGE BOUNDARY SO MASK READ ADDRESS
-        return cpu.read_memory((cpu.read_rel_pc(1) + cpu.get_register('X')) & 0xFF)
-    if operType == 'ZEROY':
-        return cpu.read_memory((cpu.read_rel_pc(1) + cpu.get_register('Y')) & 0xFF)
-    if operType == 'ABS':
-        return cpu.read_memory((cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1))
-    if operType == 'ABSX': # THIS CAN CROSS PAGE BOUNDARY
-        lowOrder = cpu.read_rel_pc(1) + cpu.get_register('X')
-        hiOrder = cpu.read_rel_pc(2)
-        if lowOrder > 0xFF:
-            instruction.addCycles(1)
-        return cpu.read_memory((hiOrder << 8) + lowOrder)
-    if operType == 'ABSY':
-        lowOrder = cpu.read_rel_pc(1) + cpu.get_register('Y')
-        if lowOrder > 0xFF:
-            instruction.addCycles(1)
-        return cpu.read_memory((cpu.read_rel_pc(2) << 8) + lowOrder)
-    if operType == 'INDX':
-        addrPtr = cpu.read_mem_word_bug((cpu.read_rel_pc(1) + cpu.get_register('X')) & 0xFF)
-        return cpu.read_memory(addrPtr)
-    if operType == 'INDY':
-        base = cpu.read_mem_word_bug(cpu.read_rel_pc(1))
-        addr = (base + cpu.get_register('Y')) & 0xFFFF
-        if (base & 0xFF00) != (addr & 0xFF00):
-            instruction.addCycles(1)
-        return cpu.read_memory(addr)
-    if operType == 'PCREL':
-        pcReg = cpu.get_register('PC') + instruction.size
-        # DO NOT & lo with 0xFF if pos - this can traverse page boundaries
-        offset = cpu.read_rel_pc(1)
-        if offset < 0x80:
-            return pcReg + offset
-        else:
-            return pcReg + offset - 0x100
+# ---- addressing modes: operand value ----
+
+def val_imm(cpu, instruction):
+    return cpu.read_memory(cpu.pc + 1)
+
+def val_zero(cpu, instruction):
+    read = cpu.read_memory
+    return read(read(cpu.pc + 1))
+
+def val_zerox(cpu, instruction):
+    # CANNOT CROSS PAGE BOUNDARY SO MASK READ ADDRESS
+    read = cpu.read_memory
+    return read((read(cpu.pc + 1) + cpu.x) & 0xFF)
+
+def val_zeroy(cpu, instruction):
+    read = cpu.read_memory
+    return read((read(cpu.pc + 1) + cpu.y) & 0xFF)
+
+def val_abs(cpu, instruction):
+    read = cpu.read_memory
+    pc = cpu.pc
+    return read((read(pc + 2) << 8) + read(pc + 1))
+
+def val_absx(cpu, instruction):  # THIS CAN CROSS PAGE BOUNDARY
+    read = cpu.read_memory
+    pc = cpu.pc
+    lowOrder = read(pc + 1) + cpu.x
+    if lowOrder > 0xFF:
+        instruction.extraCycles = 1
+    return read((read(pc + 2) << 8) + lowOrder)
+
+def val_absy(cpu, instruction):
+    read = cpu.read_memory
+    pc = cpu.pc
+    lowOrder = read(pc + 1) + cpu.y
+    if lowOrder > 0xFF:
+        instruction.extraCycles = 1
+    return read((read(pc + 2) << 8) + lowOrder)
+
+def val_indx(cpu, instruction):
+    return cpu.read_memory(cpu.read_mem_word_bug((cpu.read_memory(cpu.pc + 1) + cpu.x) & 0xFF))
+
+def val_indy(cpu, instruction):
+    base = cpu.read_mem_word_bug(cpu.read_memory(cpu.pc + 1))
+    addr = (base + cpu.y) & 0xFFFF
+    if (base & 0xFF00) != (addr & 0xFF00):
+        instruction.extraCycles = 1
+    return cpu.read_memory(addr)
+
+def val_pcrel(cpu, instruction):
+    pcReg = cpu.pc + instruction.size
+    # DO NOT & lo with 0xFF if pos - this can traverse page boundaries
+    offset = cpu.read_memory(cpu.pc + 1)
+    if offset < 0x80:
+        return pcReg + offset
+    return pcReg + offset - 0x100
+
+def no_value(cpu, instruction):
     # Going to raise an exception instead of returning a non-global/exposed value var
     raise ValueError
 
-def get_address(cpu, instruction):
-    operType = instruction.operType
-    if operType == 'ZERO':
-        return cpu.read_rel_pc(1)
-    if operType == 'ZEROX':
-        return ((cpu.read_rel_pc(1) + cpu.get_register('X')) & 0xFF)
-    if operType == 'ZEROY':
-        return ((cpu.read_rel_pc(1) + cpu.get_register('Y')) & 0xFF)
-    if operType == 'ABS':
-        return (cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1)
-    if operType == 'ABSX':
-        return (cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1) + cpu.get_register('X')
-    if operType == 'ABSY':
-        return ((cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1) + cpu.get_register('Y')) & 0xFFFF
-    if operType == 'IND':
-        addr = cpu.read_mem_word_bug((cpu.read_rel_pc(2) << 8) + cpu.read_rel_pc(1))
-        addr = addr & 0xFFFF
-        return addr
-    if operType == 'INDX':
-        return cpu.read_mem_word_bug((cpu.read_rel_pc(1) + cpu.get_register('X')) & 0xFF)
-    if operType == 'INDY':
-        base = cpu.read_mem_word_bug(cpu.read_rel_pc(1)) 
-        addr = (base + cpu.get_register('Y')) & 0xFFFF
-        return addr
+# ---- addressing modes: operand address ----
 
+def addr_zero(cpu, instruction):
+    return cpu.read_memory(cpu.pc + 1)
+
+def addr_zerox(cpu, instruction):
+    return (cpu.read_memory(cpu.pc + 1) + cpu.x) & 0xFF
+
+def addr_zeroy(cpu, instruction):
+    return (cpu.read_memory(cpu.pc + 1) + cpu.y) & 0xFF
+
+def addr_abs(cpu, instruction):
+    read = cpu.read_memory
+    pc = cpu.pc
+    return (read(pc + 2) << 8) + read(pc + 1)
+
+def addr_absx(cpu, instruction):
+    read = cpu.read_memory
+    pc = cpu.pc
+    return (read(pc + 2) << 8) + read(pc + 1) + cpu.x
+
+def addr_absy(cpu, instruction):
+    read = cpu.read_memory
+    pc = cpu.pc
+    return ((read(pc + 2) << 8) + read(pc + 1) + cpu.y) & 0xFFFF
+
+def addr_ind(cpu, instruction):
+    read = cpu.read_memory
+    pc = cpu.pc
+    return cpu.read_mem_word_bug((read(pc + 2) << 8) + read(pc + 1)) & 0xFFFF
+
+def addr_indx(cpu, instruction):
+    return cpu.read_mem_word_bug((cpu.read_memory(cpu.pc + 1) + cpu.x) & 0xFF)
+
+def addr_indy(cpu, instruction):
+    base = cpu.read_mem_word_bug(cpu.read_memory(cpu.pc + 1))
+    return (base + cpu.y) & 0xFFFF
+
+def no_address(cpu, instruction):
     return None
 
+VALUE_MODES = {'IMM': val_imm, 'ZERO': val_zero, 'ZEROX': val_zerox, 'ZEROY': val_zeroy,
+               'ABS': val_abs, 'ABSX': val_absx, 'ABSY': val_absy,
+               'INDX': val_indx, 'INDY': val_indy, 'PCREL': val_pcrel}
+ADDRESS_MODES = {'ZERO': addr_zero, 'ZEROX': addr_zerox, 'ZEROY': addr_zeroy,
+                 'ABS': addr_abs, 'ABSX': addr_absx, 'ABSY': addr_absy,
+                 'IND': addr_ind, 'INDX': addr_indx, 'INDY': addr_indy}
+
+# kept for callers outside this module
+def get_value(cpu, instruction):
+    return instruction.value(cpu, instruction)
+
+def get_address(cpu, instruction):
+    return instruction.address(cpu, instruction)
+
+
+# ---- instructions ----
 
 def doAdc(cpu, instruction):
-    value = get_value(cpu, instruction)
-    accuVal = cpu.get_register('A')
-    carryVal = cpu.get_flag('C')
-
-    newVal = accuVal + value + carryVal
-
-    cpu.set_register('A', newVal)
-    cpu.ctrl_update_flags(instruction.flags, accuVal, value, newVal, False)
+    value = instruction.value(cpu, instruction)
+    accuVal = cpu.a
+    newVal = accuVal + value + (cpu.p & C_FLAG)
+    cpu.a = newVal & 0xFF
+    p = (cpu.p & NZCV_CLEAR) | NZ[newVal & 0xFF]
+    if newVal > 0xFF:
+        p |= C_FLAG
+    if not (accuVal ^ value) & 0x80 and (accuVal ^ newVal) & 0x80:
+        p |= V_FLAG
+    cpu.p = p
     return False
 
 def doAnd(cpu, instruction):
-    value = get_value(cpu, instruction)
-    accuVal = cpu.get_register('A')
-
-    newVal = accuVal & value
-
-    cpu.set_register('A', newVal)
-    cpu.ctrl_update_flags(instruction.flags, accuVal, value, newVal, False)
+    newVal = cpu.a & instruction.value(cpu, instruction)
+    cpu.a = newVal
+    cpu.p = (cpu.p & NZ_CLEAR) | NZ[newVal]
     return False
 
 def doAsl(cpu, instruction):
-    address = get_address(cpu, instruction)
-    memVal = cpu.read_memory(address)
-
-    newVal = memVal << 1
-
-    if newVal > 0xFF:
-        cpu.set_flag('C', 1)
-    else:
-        cpu.set_flag('C', 0)
+    address = instruction.address(cpu, instruction)
+    newVal = cpu.read_memory(address) << 1
+    cpu.p = (cpu.p & NZC_CLEAR) | NZ[newVal & 0xFF] | (newVal >> 8)
     cpu.set_memory(address, newVal)
-    cpu.ctrl_update_flags(instruction.flags, memVal, memVal, newVal, False)
     return False
 
 def doAos(cpu, instruction):
-    address = get_address(cpu, instruction)
-    memVal = cpu.read_memory(address)
-    aVal = cpu.get_register('A')
-
-    newVal = memVal << 1
-    newAVal = aVal | newVal
-
-    if newVal > 0xFF:
-        cpu.set_flag('C', 1)
-    else:
-        cpu.set_flag('C', 0)
-
-    cpu.set_register('A', newAVal)
+    address = instruction.address(cpu, instruction)
+    newVal = cpu.read_memory(address) << 1
+    newAVal = (cpu.a | newVal) & 0xFF
+    cpu.a = newAVal
+    cpu.p = (cpu.p & NZC_CLEAR) | NZ[newAVal] | (newVal >> 8)
     cpu.set_memory(address, newVal)
-    cpu.ctrl_update_flags(instruction.flags, aVal, memVal, newAVal, False)
     return False
 
 def doRla(cpu, instruction):
-    address = get_address(cpu, instruction)
+    address = instruction.address(cpu, instruction)
     memVal = cpu.read_memory(address)
-    aVal = cpu.get_register('A')
-
-    oldC = cpu.get_flag('C')
-    newC = 1 if (memVal & 0x80) else 0
-    newVal = (memVal << 1) + oldC
-
-    newAVal = aVal & newVal
-
-    cpu.set_flag('C', newC)
-    cpu.set_register('A', newAVal)
+    newVal = (memVal << 1) + (cpu.p & C_FLAG)
+    newAVal = cpu.a & newVal
+    cpu.a = newAVal
+    cpu.p = (cpu.p & NZC_CLEAR) | NZ[newAVal] | (memVal >> 7)
     cpu.set_memory(address, newVal)
-    cpu.ctrl_update_flags(instruction.flags, aVal, memVal, newAVal, False)
     return False
-
 
 def doAslAccu(cpu, instruction):
-    accuVal = cpu.get_register('A')
-
-    newVal = accuVal << 1
-
-    if newVal > 0xFF:
-        cpu.set_flag('C', 1)
-    else:
-        cpu.set_flag('C', 0)
-
-    cpu.set_register('A', newVal)
-    cpu.ctrl_update_flags(instruction.flags, accuVal, accuVal, newVal, False)
+    newVal = cpu.a << 1
+    cpu.a = newVal & 0xFF
+    cpu.p = (cpu.p & NZC_CLEAR) | NZ[newVal & 0xFF] | (newVal >> 8)
     return False
 
 
-def doBranch(cpu, instruction, flag, value):
-    if cpu.get_flag(flag) != value:
+def doBranch(cpu, instruction, taken):
+    if not taken:
         return False
 
-    target = get_value(cpu, instruction)
-    currPC = cpu.get_register('PC')
-    cpu.set_pc(target)
+    target = val_pcrel(cpu, instruction)
+    currPC = cpu.pc
+    cpu.pc = target & 0xFFFF
 
     # Add 1 cycle because we branched - add an extra if we jumped a page boundary
     if target & 0xFF00 != currPC & 0xFF00:
-        instruction.addCycles(2)
+        instruction.extraCycles = 2
     else:
-        instruction.addCycles(1)
+        instruction.extraCycles = 1
 
     return True         # true because we change PC in this case
 
 def doBcc(cpu, instruction):
-    return doBranch(cpu, instruction, 'C', 0)
+    return doBranch(cpu, instruction, not cpu.p & C_FLAG)
 
 def doBcs(cpu, instruction):
-    return doBranch(cpu, instruction, 'C', 1)
+    return doBranch(cpu, instruction, cpu.p & C_FLAG)
 
 def doBeq(cpu, instruction):
-    return doBranch(cpu, instruction, 'Z', 1)
+    return doBranch(cpu, instruction, cpu.p & Z_FLAG)
 
 def doBit(cpu, instruction):
-    value = get_value(cpu, instruction)
-    accuVal = cpu.get_register('A')
-
-    cpu.set_flag('N', (value>>7)&1)
-    cpu.set_flag('V', (value>>6)&1)
-    cpu.set_flag('Z', 0 if value & accuVal != 0 else 1)
+    value = instruction.value(cpu, instruction)
+    p = (cpu.p & 0xFF & ~(N_FLAG | V_FLAG | Z_FLAG)) | (value & (N_FLAG | V_FLAG))
+    if not value & cpu.a:
+        p |= Z_FLAG
+    cpu.p = p
     return False
 
 def doBmi(cpu, instruction):
-    return doBranch(cpu, instruction, 'N', 1)
+    return doBranch(cpu, instruction, cpu.p & N_FLAG)
 
 def doBne(cpu, instruction):
-    return doBranch(cpu, instruction, 'Z', 0)
+    return doBranch(cpu, instruction, not cpu.p & Z_FLAG)
 
 def doBpl(cpu, instruction):
-    return doBranch(cpu, instruction, 'N', 0)
+    return doBranch(cpu, instruction, not cpu.p & N_FLAG)
 
 def doBrk(cpu, instruction):
-    cpu.push_word(cpu.get_register('PC')+2)
-    cpu.push_byte(cpu.get_register('S'))
-    cpu.set_flag('I', 1)
-    cpu.set_flag('B', 1)
+    cpu.push_word(cpu.pc + 2)
+    # the pushed copy of P has B set (that's how the handler tells BRK from IRQ);
+    # B isn't a real bit in P itself, so only I changes
+    cpu.push_byte(cpu.p | B_FLAG | U_FLAG)
+    cpu.p |= I_FLAG
 
     # jmp to irqBrk vector
-    target = cpu.read_mem_word(cpu.irq_brk_vector)
-    cpu.set_pc(target)
+    cpu.pc = cpu.read_mem_word(cpu.irq_brk_vector) & 0xFFFF
     cpu.paused = True
     return True
 
 def doBvc(cpu, instruction):
-    return doBranch(cpu, instruction, 'V', 0)
+    return doBranch(cpu, instruction, not cpu.p & V_FLAG)
 
 def doBvs(cpu, instruction):
-    return doBranch(cpu, instruction, 'V', 1)
+    return doBranch(cpu, instruction, cpu.p & V_FLAG)
 
 def doClc(cpu, instruction):
-    cpu.set_flag('C', 0)
+    cpu.p &= ~C_FLAG
     return False
 
 def doCld(cpu, instruction):
-    cpu.set_flag('D', 0)
+    cpu.p &= ~D_FLAG
     return False
 
 def doCli(cpu, instruction):
-    cpu.set_flag('I', 0)
+    cpu.p &= ~I_FLAG
     return False
 
 def doClv(cpu, instruction):
-    cpu.set_flag('V', 0)
+    cpu.p &= ~V_FLAG
     return False
 
-def doCmp(cpu, instruction):
-    value = get_value(cpu, instruction)
-    accuVal = cpu.get_register('A')
-
-    newVal = accuVal - value
+def compare(cpu, reg, value):
     # Dont set a register in compare
-    if accuVal >= value:
-        cpu.set_flag('C', 1)
-    else:
-        cpu.set_flag('C', 0)
-    cpu.ctrl_update_flags(instruction.flags, accuVal, value, newVal, True)
+    p = (cpu.p & NZC_CLEAR) | NZ[(reg - value) & 0xFF]
+    if reg >= value:
+        p |= C_FLAG
+    cpu.p = p
+
+def doCmp(cpu, instruction):
+    compare(cpu, cpu.a, instruction.value(cpu, instruction))
     return False
 
 def doCpx(cpu, instruction):
-    value = get_value(cpu, instruction)
-    xVal = cpu.get_register('X')
-
-    newVal = xVal - value
-    # Don't set a register in compare
-    if xVal >= value:
-        cpu.set_flag('C', 1)
-    else:
-        cpu.set_flag('C', 0)
-    cpu.ctrl_update_flags(instruction.flags, xVal, value, newVal, True)
+    compare(cpu, cpu.x, instruction.value(cpu, instruction))
     return False
 
 def doCpy(cpu, instruction):
-    value = get_value(cpu, instruction)
-    yVal = cpu.get_register('Y')
-
-    newVal = yVal - value
-    # Don't set a register in compare
-    if yVal >= value:
-        cpu.set_flag('C', 1)
-    else:
-        cpu.set_flag('C', 0)
-    cpu.ctrl_update_flags(instruction.flags, yVal, value, newVal, True)
+    compare(cpu, cpu.y, instruction.value(cpu, instruction))
     return False
 
 def doDec(cpu, instruction):
-    addrVal = get_address(cpu, instruction)
-    memVal = cpu.read_memory(addrVal)
-
-    newVal = memVal - 1
+    addrVal = instruction.address(cpu, instruction)
+    newVal = (cpu.read_memory(addrVal) - 1) & 0xFF
     cpu.set_memory(addrVal, newVal)
-    cpu.ctrl_update_flags(instruction.flags, memVal, 1, newVal, True)
+    cpu.p = (cpu.p & NZ_CLEAR) | NZ[newVal]
     return False
 
 def doDex(cpu, instruction):
-    xVal = cpu.get_register('X')
-    cpu.set_register('X', xVal-1)
-    cpu.ctrl_update_flags(instruction.flags, xVal, 1, xVal-1, True)
+    newVal = (cpu.x - 1) & 0xFF
+    cpu.x = newVal
+    cpu.p = (cpu.p & NZ_CLEAR) | NZ[newVal]
     return False
 
 def doDey(cpu, instruction):
-    yVal = cpu.get_register('Y')
-    cpu.set_register('Y', yVal-1)
-    cpu.ctrl_update_flags(instruction.flags, yVal, 1, yVal-1, True)
+    newVal = (cpu.y - 1) & 0xFF
+    cpu.y = newVal
+    cpu.p = (cpu.p & NZ_CLEAR) | NZ[newVal]
     return False
 
 def doEor(cpu, instruction):
-    aVal = cpu.get_register('A')
-    value = get_value(cpu, instruction)
-
-    newVal = aVal ^ value
-    cpu.set_register('A', newVal)
-    cpu.ctrl_update_flags(instruction.flags, aVal, value, newVal, False)
+    newVal = cpu.a ^ instruction.value(cpu, instruction)
+    cpu.a = newVal
+    cpu.p = (cpu.p & NZ_CLEAR) | NZ[newVal]
     return False
 
 def doInc(cpu, instruction):
-    addrVal = get_address(cpu, instruction)
-    memVal = cpu.read_memory(addrVal)
-
-    newVal = (memVal + 1) & 0xFF
+    addrVal = instruction.address(cpu, instruction)
+    newVal = (cpu.read_memory(addrVal) + 1) & 0xFF
     cpu.set_memory(addrVal, newVal)
-    cpu.ctrl_update_flags(instruction.flags, memVal, memVal, newVal, False)
+    cpu.p = (cpu.p & NZ_CLEAR) | NZ[newVal]
     return False
 
 def doInx(cpu, instruction):
-    xVal = cpu.get_register('X')
-    cpu.set_register('X', xVal+1)
-    cpu.ctrl_update_flags(instruction.flags, xVal, xVal, (xVal+1)&0xFF, False)
+    newVal = (cpu.x + 1) & 0xFF
+    cpu.x = newVal
+    cpu.p = (cpu.p & NZ_CLEAR) | NZ[newVal]
     return False
 
 def doIny(cpu, instruction):
-    yVal = cpu.get_register('Y')
-    cpu.set_register('Y', yVal+1)
-    cpu.ctrl_update_flags(instruction.flags, yVal, yVal, (yVal+1)&0xFF, False)
+    newVal = (cpu.y + 1) & 0xFF
+    cpu.y = newVal
+    cpu.p = (cpu.p & NZ_CLEAR) | NZ[newVal]
     return False
 
 def doJmp(cpu, instruction):
-    addr = get_address(cpu, instruction)
-    cpu.set_pc(addr)
+    cpu.pc = instruction.address(cpu, instruction) & 0xFFFF
     return True # PC changed by this instruction
 
 def doJsr(cpu, instruction):
-    addr = get_address(cpu, instruction)
-    cpu.push_word(cpu.get_register('PC') + instruction.size - 1)
-    cpu.set_pc(addr)
+    addr = instruction.address(cpu, instruction)
+    cpu.push_word(cpu.pc + instruction.size - 1)
+    cpu.pc = addr & 0xFFFF
     return True # PC changed by this instruction
 
 def doLda(cpu, instruction):
-    value = get_value(cpu, instruction)
-    aVal = cpu.get_register('A')
-    cpu.set_register('A', value)
-    cpu.ctrl_update_flags(instruction.flags, aVal, value, value, False)
+    value = instruction.value(cpu, instruction)
+    cpu.a = value
+    cpu.p = (cpu.p & NZ_CLEAR) | NZ[value]
     return False
 
 def doLdx(cpu, instruction):
-    value = get_value(cpu, instruction)
-    xVal = cpu.get_register('X')
-    cpu.set_register('X', value)
-    cpu.ctrl_update_flags(instruction.flags, xVal, value, value, False)
+    value = instruction.value(cpu, instruction)
+    cpu.x = value
+    cpu.p = (cpu.p & NZ_CLEAR) | NZ[value]
     return False
 
 
 def doLax(cpu, instruction):
-    value = get_value(cpu, instruction)
-    xVal = cpu.get_register('X')
-    cpu.set_register('A', value)
-    cpu.set_register('X', value)
-    cpu.ctrl_update_flags(instruction.flags, xVal, value, value, False)
+    value = instruction.value(cpu, instruction)
+    cpu.a = value
+    cpu.x = value
+    cpu.p = (cpu.p & NZ_CLEAR) | NZ[value]
     return False
 
 def doSax(cpu, instruction):
-    value = get_value(cpu, instruction)
-    xVal = cpu.get_register('X')
-    aVal = cpu.get_register('A')
-
-    newVal = (aVal & xVal) - value
-    cpu.set_register('X', newVal)
-    cpu.ctrl_update_flags(instruction.flags, xVal, aVal, newVal, True)
+    newVal = (cpu.a & cpu.x) - instruction.value(cpu, instruction)
+    cpu.x = newVal & 0xFF
+    p = (cpu.p & NZC_CLEAR) | NZ[newVal & 0xFF]
+    if newVal >= 0:
+        p |= C_FLAG
+    cpu.p = p
     return False
 
 def doAxs(cpu, instruction):
-    addr = get_address(cpu, instruction)
-    xVal = cpu.get_register('X')
-    aVal = cpu.get_register('A')
-
-    newVal = (aVal & xVal)
-    cpu.set_memory(addr, newVal)
+    cpu.set_memory(instruction.address(cpu, instruction), cpu.a & cpu.x)
     return False
 
 def doLdy(cpu, instruction):
-    value = get_value(cpu, instruction)
-    yVal = cpu.get_register('Y')
-    cpu.set_register('Y', value)
-    cpu.ctrl_update_flags(instruction.flags, yVal, value, value, False)
+    value = instruction.value(cpu, instruction)
+    cpu.y = value
+    cpu.p = (cpu.p & NZ_CLEAR) | NZ[value]
     return False
 
 def doLsrAcc(cpu, instruction):
-    aVal = cpu.get_register('A')
+    aVal = cpu.a
     newVal = aVal >> 1
-    cpu.set_register('A', newVal)
-    cBit = aVal & 1
-    cpu.set_flag('C', cBit)
-    cpu.ctrl_update_flags(instruction.flags, aVal, aVal, newVal, True)
+    cpu.a = newVal
+    cpu.p = (cpu.p & NZC_CLEAR) | NZ[newVal] | (aVal & 1)
     return False
 
 def doLsr(cpu, instruction):
-    address = get_address(cpu, instruction)
+    address = instruction.address(cpu, instruction)
     value = cpu.read_memory(address)
     newVal = value >> 1
     cpu.set_memory(address, newVal)
-    cBit = value & 1
-    cpu.set_flag('C', cBit)
-    cpu.ctrl_update_flags(instruction.flags, value, value, newVal, True)
+    cpu.p = (cpu.p & NZC_CLEAR) | NZ[newVal] | (value & 1)
     return False
 
 def doLse(cpu, instruction):
-    aVal = cpu.get_register('A')
-    address = get_address(cpu, instruction)
+    address = instruction.address(cpu, instruction)
     value = cpu.read_memory(address)
     newVal = value >> 1
     cpu.set_memory(address, newVal)
-    cBit = value & 1
-    newAVal = aVal ^ newVal
-    
-    cpu.set_register('A', newAVal)
-    cpu.set_flag('C', cBit)
-    cpu.ctrl_update_flags(instruction.flags, aVal, newVal, newAVal, True)
+    newAVal = cpu.a ^ newVal
+    cpu.a = newAVal
+    cpu.p = (cpu.p & NZC_CLEAR) | NZ[newAVal] | (value & 1)
     return False
 
 def doNop(cpu, instruction):
     # Unofficial NOPs with an addressing mode still do the read (abs,X can add a page-cross cycle).
     if instruction.operType:
-        get_value(cpu, instruction)
+        instruction.value(cpu, instruction)
     return False
 
 def doOra(cpu, instruction):
-    value = get_value(cpu, instruction)
-    aVal = cpu.get_register('A')
-
-    newVal = aVal | value
-    cpu.set_register('A', newVal)
-    cpu.ctrl_update_flags(instruction.flags, aVal, value, newVal, False)
+    newVal = cpu.a | instruction.value(cpu, instruction)
+    cpu.a = newVal
+    cpu.p = (cpu.p & NZ_CLEAR) | NZ[newVal]
     return False
 
 def doPha(cpu, instruction):
-    aVal = cpu.get_register('A')
-    cpu.push_byte(aVal)
+    cpu.push_byte(cpu.a)
     return False
 
 def doPhp(cpu, instruction):
-    srVal = cpu.get_register('P')
-    cpu.push_byte(srVal | 0x10)
+    cpu.push_byte(cpu.p | B_FLAG)
     return False
 
 def doPla(cpu, instruction):
     aVal = cpu.pop_byte()
-    cpu.set_register('A', aVal)
-    cpu.ctrl_update_flags(instruction.flags, aVal, aVal, aVal, False)
+    cpu.a = aVal
+    cpu.p = (cpu.p & NZ_CLEAR) | NZ[aVal]
     return False
 
 def doPlp(cpu, instruction):
-    cpu.set_register('P', cpu.pop_byte() & 0xEF | 0x20)
+    cpu.p = (cpu.pop_byte() & ~B_FLAG & 0xFF) | U_FLAG
     return False
 
 def doRolAcc(cpu, instruction):
-    value = cpu.get_register('A')
-    oldC = cpu.get_flag('C')
-    newC = 1 if (value & 0x80) else 0
-    newVal = (value << 1) + oldC
-    cpu.set_register('A', newVal)
-    cpu.set_flag('C', newC)
-    cpu.ctrl_update_flags(instruction.flags, value, value, newVal, False)
+    value = cpu.a
+    newVal = ((value << 1) + (cpu.p & C_FLAG)) & 0xFF
+    cpu.a = newVal
+    cpu.p = (cpu.p & NZC_CLEAR) | NZ[newVal] | (value >> 7)
     return False
 
 def doRol(cpu, instruction):
-    addr = get_address(cpu, instruction)
+    addr = instruction.address(cpu, instruction)
     value = cpu.read_memory(addr)
-    oldC = cpu.get_flag('C')
-    newC = 1 if (value & 0x80) else 0
-    newVal = (value << 1) + oldC
+    newVal = ((value << 1) + (cpu.p & C_FLAG)) & 0xFF
     cpu.set_memory(addr, newVal)
-    cpu.set_flag('C', newC)
-    cpu.ctrl_update_flags(instruction.flags, value, value, newVal, False)
+    cpu.p = (cpu.p & NZC_CLEAR) | NZ[newVal] | (value >> 7)
     return False
 
 def doRorAcc(cpu, instruction):
-    value = cpu.get_register('A')
-    oldC = cpu.get_flag('C')
-    newC = 1 if (value & 0x1) else 0
-    newVal = (value >> 1) + (oldC * 0x80)
-    cpu.set_register('A', newVal)
-    cpu.set_flag('C', newC)
-    cpu.ctrl_update_flags(instruction.flags, value, value, newVal, False)
+    value = cpu.a
+    newVal = (value >> 1) | ((cpu.p & C_FLAG) << 7)
+    cpu.a = newVal
+    cpu.p = (cpu.p & NZC_CLEAR) | NZ[newVal] | (value & 1)
     return False
 
 def doRor(cpu, instruction):
-    addr = get_address(cpu, instruction)
+    addr = instruction.address(cpu, instruction)
     value = cpu.read_memory(addr)
-    oldC = cpu.get_flag('C')
-    newC = 1 if (value & 0x1) else 0
-    newVal = (value >> 1) + (oldC * 0x80)
+    newVal = (value >> 1) | ((cpu.p & C_FLAG) << 7)
     cpu.set_memory(addr, newVal)
-    cpu.set_flag('C', newC)
-    cpu.ctrl_update_flags(instruction.flags, value, value, newVal, False)
+    cpu.p = (cpu.p & NZC_CLEAR) | NZ[newVal] | (value & 1)
     return False
 
 def doRra(cpu, instruction):
-    addr = get_address(cpu, instruction)
-    aVal = cpu.get_register('A')
+    addr = instruction.address(cpu, instruction)
+    aVal = cpu.a
     value = cpu.read_memory(addr)
-    oldC = cpu.get_flag('C')
-    newC = 1 if (value & 0x1) else 0
-    newVal = (value >> 1) + (oldC * 0x80)
-    
-    newAVal = aVal + newVal + newC
+    newVal = (value >> 1) | ((cpu.p & C_FLAG) << 7)
+    newAVal = aVal + newVal + (value & 1)
 
-    cpu.set_register('A', newAVal)
+    cpu.a = newAVal & 0xFF
     cpu.set_memory(addr, newVal)
-    cpu.ctrl_update_flags(instruction.flags, aVal, newVal, newAVal, False)
+    p = (cpu.p & NZCV_CLEAR) | NZ[newAVal & 0xFF]
+    if newAVal > 0xFF:
+        p |= C_FLAG
+    if not (aVal ^ newVal) & 0x80 and (aVal ^ newAVal) & 0x80:
+        p |= V_FLAG
+    cpu.p = p
     return False
-
-
 
 
 def doRti(cpu, instruction):
-    cpu.set_register('P', cpu.pop_byte())
-    cpu.set_pc(cpu.pop_word())
+    cpu.p = (cpu.pop_byte() | U_FLAG) & 0xFF
+    cpu.pc = cpu.pop_word() & 0xFFFF
     return True
 
 def doRts(cpu, instruction):
-    cpu.set_pc(cpu.pop_word()+1)
+    cpu.pc = (cpu.pop_word() + 1) & 0xFFFF
     return True
 
+def subtract(cpu, aVal, value, p_clear):
+    """A - value - borrow into A; sets N, Z, V (and C unless p_clear keeps it)."""
+    newVal = aVal - value - (1 - (cpu.p & C_FLAG))
+    cpu.a = newVal & 0xFF
+    p = (cpu.p & p_clear) | NZ[newVal & 0xFF]
+    if p_clear == NZCV_CLEAR and newVal >= 0:
+        p |= C_FLAG
+    if (aVal ^ value) & 0x80 and (aVal ^ newVal) & 0x80:
+        p |= V_FLAG
+    cpu.p = p
+
 def doSbc(cpu, instruction):
-    aVal = cpu.get_register('A')
-    value = get_value(cpu, instruction)
-    cVal = cpu.get_flag('C')
-
-    newVal = aVal - value - (1-cVal)
-
-    cpu.set_register('A', newVal)
-    cpu.ctrl_update_flags(instruction.flags, aVal, value, newVal, True)
+    subtract(cpu, cpu.a, instruction.value(cpu, instruction), NZCV_CLEAR)
     return False
 
 def doIns(cpu, instruction):
-    aVal = cpu.get_register('A')
-    addr = get_address(cpu, instruction)
+    addr = instruction.address(cpu, instruction)
     value = (cpu.read_memory(addr) + 1) & 0xFF
-    cVal = cpu.get_flag('C')
-
-    newVal = aVal - value - (1-cVal)
-
     cpu.set_memory(addr, value)
-    cpu.set_register('A', newVal)
-    cpu.ctrl_update_flags(instruction.flags, aVal, value, newVal, True)
+    subtract(cpu, cpu.a, value, NZV_CLEAR)     # INS leaves C alone
     return False
 
 def doSec(cpu, instruction):
-    cpu.set_flag('C', 1)
+    cpu.p |= C_FLAG
     return False
 
 def doSed(cpu, instruction):
-    cpu.set_flag('D', 1)
+    cpu.p |= D_FLAG
     return False
 
 def doSei(cpu, instruction):
-    cpu.set_flag('I', 1)
+    cpu.p |= I_FLAG
     return False
 
 def doSta(cpu, instruction):
-    aVal = cpu.get_register('A')
-    addr = get_address(cpu, instruction)
-
-    cpu.set_memory(addr, aVal)
+    cpu.set_memory(instruction.address(cpu, instruction), cpu.a)
     return False
 
 def doStx(cpu, instruction):
-    xVal = cpu.get_register('X')
-    addr = get_address(cpu, instruction)
-
-    cpu.set_memory(addr, xVal)
+    cpu.set_memory(instruction.address(cpu, instruction), cpu.x)
     return False
 
 def doSty(cpu, instruction):
-    yVal = cpu.get_register('Y')
-    addr = get_address(cpu, instruction)
-
-    cpu.set_memory(addr, yVal)
+    cpu.set_memory(instruction.address(cpu, instruction), cpu.y)
     return False
 
 def doTax(cpu, instruction):
-    aVal = cpu.get_register('A')
-    cpu.set_register('X', aVal)
-
-    cpu.ctrl_update_flags(instruction.flags, aVal, aVal, aVal, False)
+    aVal = cpu.a
+    cpu.x = aVal
+    cpu.p = (cpu.p & NZ_CLEAR) | NZ[aVal]
     return False
 
 def doTay(cpu, instruction):
-    aVal = cpu.get_register('A')
-    cpu.set_register('Y', aVal)
-
-    cpu.ctrl_update_flags(instruction.flags, aVal, aVal, aVal, False)
+    aVal = cpu.a
+    cpu.y = aVal
+    cpu.p = (cpu.p & NZ_CLEAR) | NZ[aVal]
     return False
 
 def doTsx(cpu, instruction):
-    sVal = cpu.get_register('S')
-    cpu.set_register('X', sVal)
-
-    cpu.ctrl_update_flags(instruction.flags, sVal, sVal, sVal, False)
+    sVal = cpu.s
+    cpu.x = sVal
+    cpu.p = (cpu.p & NZ_CLEAR) | NZ[sVal]
     return False
 
 def doTxa(cpu, instruction):
-    xVal = cpu.get_register('X')
-    cpu.set_register('A', xVal)
-
-    cpu.ctrl_update_flags(instruction.flags, xVal, xVal, xVal, False)
+    xVal = cpu.x
+    cpu.a = xVal
+    cpu.p = (cpu.p & NZ_CLEAR) | NZ[xVal]
     return False
 
 def doTxs(cpu, instruction):
-    xVal = cpu.get_register('X')
-    cpu.set_register('S', xVal)
-
-    cpu.ctrl_update_flags(instruction.flags, xVal, xVal, xVal, False)
+    cpu.s = cpu.x
     return False
 
 def doTya(cpu, instruction):
-    yVal = cpu.get_register('Y')
-    cpu.set_register('A', yVal)
-
-    cpu.ctrl_update_flags(instruction.flags, yVal, yVal, yVal, False)
+    yVal = cpu.y
+    cpu.a = yVal
+    cpu.p = (cpu.p & NZ_CLEAR) | NZ[yVal]
     return False
 
 def doDcm(cpu, instruction):
-    addr = get_address(cpu, instruction)
+    addr = instruction.address(cpu, instruction)
     value = (cpu.read_memory(addr) - 1) & 0xFF
-    aVal = cpu.get_register('A')
-   
-    newVal = aVal - value
-    if aVal >= value:
-        cpu.set_flag('C', 1)
-    else:
-        cpu.set_flag('C', 0)
-    
+    aVal = cpu.a
     cpu.set_memory(addr, value)
-    cpu.ctrl_update_flags(instruction.flags, aVal, value, newVal, True)
+    compare(cpu, aVal, value)
     return False
 
 # http://www.e-tradition.net/bytes/6502/6502_instruction_set.html - better clock info
