@@ -53,7 +53,7 @@ class Rom(object):
         self.pal = flags9 & 1
 
         index = headerSize
-        if self.trainer == 1:
+        if self.trainer:
             self.trainerData = romData[index:index+512]
             cpu.init_memory(0x7000, self.trainerData)
             index += 512

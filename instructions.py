@@ -447,7 +447,9 @@ def doLse(cpu, instruction):
     return False
 
 def doNop(cpu, instruction):
-    value = get_value(cpu, instruction)
+    # Unofficial NOPs with an addressing mode still do the read (abs,X can add a page-cross cycle).
+    if instruction.operType:
+        get_value(cpu, instruction)
     return False
 
 def doOra(cpu, instruction):

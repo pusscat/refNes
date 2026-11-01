@@ -346,9 +346,11 @@ class PPU():
             self.tube_x = 0
             self.tube_y += 1
             self.hblank = 1
-            if self.tube_y < self.ylines:
-                self.renderer.update(self.screen, self.tube_y)
+            # draw the line that just finished (0..239)
+            if self.tube_y <= self.ylines:
+                self.renderer.update(self.screen, self.tube_y - 1)
             if self.tube_y == self.ylines:
+                self.renderer.present()
                 self.set_vblank()
                 if self.get_nmi_mask() == 1:
                     self.nmi = 1

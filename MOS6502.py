@@ -319,7 +319,7 @@ class CPU(object):
         opcode = self.read_memory(addr)
         try:
             instruction = instructions.instructions[opcode]
-        except IndexError:
+        except KeyError:
             print("Failed to decode instruction: " + hex(opcode) + " @ " + hex(addr))
             self.paused = True
             return addr

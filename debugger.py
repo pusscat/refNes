@@ -222,8 +222,9 @@ class NesDebugger(object):
 
     def test_log(self, cmd_list):
         """Test execution against an execution log from another emu"""
-        log = open("tests/" + cmd_list[1] + ".log", "r")
-        log_lines = log.readlines()
+        with open("tests/" + cmd_list[1] + ".log", "r") as log:
+            # skip blank lines so a trailing newline doesn't count as an entry
+            log_lines = [line for line in log if line.strip()]
 
         pc_start = int("0x" + log_lines[0].split()[0], 16)
         self.cpu.set_pc(pc_start)
@@ -231,7 +232,7 @@ class NesDebugger(object):
 
         failed = False
         instruction = 1
-        while failed == False:
+        while failed == False and instruction < len(log_lines):
             line = log_lines[instruction]
             data = line.split()
             index = 0
@@ -245,7 +246,8 @@ class NesDebugger(object):
             x = int("0x" + data[index+1][2:], 16)
             y = int("0x" + data[index+2][2:], 16)
             p = int("0x" + data[index+3][2:], 16)
-            s = int("0x" + data[index+4][2:], 16)
+            # stack pointer is "S:FD" in some logs and "SP:FD" in others
+            s = int("0x" + data[index+4].split(':')[1], 16)
             self.step_cpu()
 
             if (a != self.cpu.get_register('A')):
@@ -267,7 +269,13 @@ class NesDebugger(object):
                 print("PC is wrong: " + hex(pc))
                 failed = True
 
+            if failed:
+                print(f"Mismatch at log line {instruction + 1}: {line.strip()}")
+
             instruction += 1
+
+        if not failed:
+            print(f"Passed: all {len(log_lines)} log lines matched.")
 
     def set_register(self, cmd_list):
         """Set the specified register to the specified value"""
