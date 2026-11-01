@@ -41,21 +41,25 @@ Controller keys are set in `controls.cfg` (player 1: arrows, Z = B, X = A, Right
     - Debugger scripts (Ex: `script set_breakpoints`)
     - Better screen printing to console
     - Whatever else comes to mind...
-- Utilizing PixelArray from pygame for drawing to the display surface.
+- Drawing with pygame: each frame is copied into an 8-bit surface whose palette is the NES colors.
 - Miscellaneous stuff I forgot.
 
 
 ## Installing Dependencies
 
-- [SDL2, the cross-platform hardware abstraction layer for media software](https://www.libsdl.org)
-- Python 2
-- [PySDL2, the Python bindings for SDL2](https://pysdl2.readthedocs.io/)
+- Python 3.7 or newer (tested with 3.12)
+- [pygame](https://www.pygame.org) 2.x (tested with 2.5.2); it includes SDL2, so nothing else is needed
 
-On macOS:
+On any platform with pip (Linux, macOS, Windows):
 
 ```shell
-brew install sdl2
-sudo python -m pip install pysdl2
+python3 -m pip install pygame
+```
+
+On Debian/Ubuntu you can use the system package instead:
+
+```shell
+sudo apt install python3-pygame
 ```
 
 ## Getting refNes
@@ -68,7 +72,7 @@ git clone https://github.com/pusscat/refNes
 
 ```bash
 cd refNes
-python debugger.py /path/to/rom.nes
+python3 debugger.py /path/to/rom.nes
 ```
 
 ## How to Run refNes Tests
@@ -76,6 +80,6 @@ python debugger.py /path/to/rom.nes
 ```bash
 # First, place a valid smb1.nes file in the refNes directory.
 cd refNes/tests
-python instruction_tests.py
-python cart_tests.py
+python3 instruction_tests.py
+python3 cart_tests.py
 ```
