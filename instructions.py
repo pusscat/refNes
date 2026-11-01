@@ -56,11 +56,11 @@ def get_value(cpu, instruction):
         addrPtr = cpu.read_mem_word_bug((cpu.read_rel_pc(1) + cpu.get_register('X')) & 0xFF)
         return cpu.read_memory(addrPtr)
     if operType == 'INDY':
-        lowOrder = cpu.read_mem_word_bug(cpu.read_rel_pc(1)) + cpu.get_register('Y')
-        lowOrder = lowOrder & 0xFFFF
-        if lowOrder > 0xFF:
+        base = cpu.read_mem_word_bug(cpu.read_rel_pc(1))
+        addr = (base + cpu.get_register('Y')) & 0xFFFF
+        if (base & 0xFF00) != (addr & 0xFF00):
             instruction.addCycles(1)
-        return cpu.read_memory(lowOrder)
+        return cpu.read_memory(addr)
     if operType == 'PCREL':
         pcReg = cpu.get_register('PC') + instruction.size
         # DO NOT & lo with 0xFF if pos - this can traverse page boundaries
@@ -93,12 +93,9 @@ def get_address(cpu, instruction):
     if operType == 'INDX':
         return cpu.read_mem_word_bug((cpu.read_rel_pc(1) + cpu.get_register('X')) & 0xFF)
     if operType == 'INDY':
-        lowOrder = cpu.read_mem_word_bug(cpu.read_rel_pc(1)) + cpu.get_register('Y')
-        lowOrder = lowOrder & 0xFFFF
-        if lowOrder > 0xFF:
-            instruction.addCycles(1)
-            # we should NOT add 1 to high order in this case.
-        return lowOrder
+        base = cpu.read_mem_word_bug(cpu.read_rel_pc(1)) 
+        addr = (base + cpu.get_register('Y')) & 0xFFFF
+        return addr
 
     return None
 
@@ -898,7 +895,7 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x9D: Instruction('STA', doSta, 'ABSX', 3, 5),
                 0x99: Instruction('STA', doSta, 'ABSY', 3, 5),
                 0x81: Instruction('STA', doSta, 'INDX', 2, 6),
-                0x91: Instruction('STA', doSta, 'INDY', 2, 5),
+                0x91: Instruction('STA', doSta, 'INDY', 2, 6),
                 0x86: Instruction('STX', doStx, 'ZERO', 2, 3),
                 0x96: Instruction('STX', doStx, 'ZEROY', 2, 4),
                 0x8E: Instruction('STX', doStx, 'ABS', 3, 4),

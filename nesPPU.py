@@ -180,13 +180,13 @@ class PPU():
 
     def mark_dirty(self, address):
         self.dirtyVram = 1
-        base = (((address % 0x800)/0x400)*(32*30))
+        base = (((address % 0x800)//0x400)*(32*30))
         if (address % 0x400) < 0x3c0:
             self.vramWrites[base + (address % 0x499)] = 1
         else:
             i = (address % 0x400) - 0x3c0
             x = (i % 8) * 4
-            y = (i / 8) * 4
+            y = (i // 8) * 4
             for ys in range(y, y+4):
                 for xs in range(x, x+4):
                     self.vramWrites[base + xs + (ys * 32)] = 1
@@ -224,7 +224,7 @@ class PPU():
             name_y = ry % self.ylines
 
             rx = self.scroll_x
-            nnot = (rx/256)&1
+            nnot = (rx//256)&1
             for x in range(0, self.xlines):
                 name_x = rx % self.xlines
                 c = self.nt[name_x + (256 * name_y) + ((256 * 240) * (ntable^nnot))]
@@ -290,8 +290,8 @@ class PPU():
 
         for y in range(yTile*8, (yTile*8)+4):
             for x in range(xTile*8, (xTile*8)+4):
-                name_x = x/8
-                name_7 = y/8
+                name_x = x//8
+                name_7 = y//8
 
                 sx = x%8
                 sy = y%8
@@ -305,15 +305,15 @@ class PPU():
                 c = (self.read_memory(cIndex) >> (7 - sx)) & 1
                 c |= (self.read_memory(cIndex+8) >> (7 - sx)) << 1
 
-                name_x = x/32
-                name_y = y/32
+                name_x = x//32
+                name_y = y//32
                 addr = ((name_x % 8) + ((name_7 % 8) * 8)) + 0x3c0
                 addr += nameTable * 0x400
 
                 p = self.read_memory(self.nameTable0 + addr)
 
-                name_x = (x / 16) % 2
-                name_y = (y / 16) % 2
+                name_x = (x // 16) % 2
+                name_y = (y // 16) % 2
 
                 c |= ((p >> 2 * (name_x + (name_y << 1))) & 3) << 2
                 self.nt[x + (y * self.xlines) + (nameTable * (self.xlines * self.ylines))] = c
@@ -334,7 +334,7 @@ class PPU():
             self.dirtyVram = 0
             for i in range(0, (32*30*2)):
                 if self.vramWrites[i] != 0:
-                    self.draw_nametable(i/(32*30), i%32, (i%(32*30))/32)
+                    self.draw_nametable(i//(32*30), i%32, (i%(32*30))//32)
                     self.vramWrites[i] = 0
 
 
