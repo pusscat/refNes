@@ -447,6 +447,7 @@ def doLse(cpu, instruction):
     return False
 
 def doNop(cpu, instruction):
+    value = get_value(cpu, instruction)
     return False
 
 def doOra(cpu, instruction):
@@ -560,8 +561,8 @@ def doSbc(cpu, instruction):
 
 def doIns(cpu, instruction):
     aVal = cpu.get_register('A')
-    value = get_value(cpu, instruction) + 1
     addr = get_address(cpu, instruction)
+    value = (cpu.read_memory(addr) + 1) & 0xFF
     cVal = cpu.get_flag('C')
 
     newVal = aVal - value - (1-cVal)
@@ -648,7 +649,7 @@ def doTya(cpu, instruction):
 
 def doDcm(cpu, instruction):
     addr = get_address(cpu, instruction)
-    value = (get_value(cpu, instruction) - 1)
+    value = (cpu.read_memory(addr) - 1) & 0xFF
     aVal = cpu.get_register('A')
    
     newVal = aVal - value
@@ -784,7 +785,7 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0xCC: Instruction('CPY', doCpy, 'ABS', 3, 4),
                 0xC6: Instruction('DEC', doDec, 'ZERO', 2, 5),
                 0xD6: Instruction('DEC', doDec, 'ZEROX', 2, 6),
-                0xCE: Instruction('DEC', doDec, 'ABS', 3, 3),
+                0xCE: Instruction('DEC', doDec, 'ABS', 3, 6),
                 0xDE: Instruction('DEC', doDec, 'ABSX', 3, 7),
                 0xCA: Instruction('DEX', doDex, '', 1, 2),
                 0x88: Instruction('DEY', doDey, '', 1, 2),
@@ -829,27 +830,27 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x4E: Instruction('LSR', doLsr, 'ABS', 3, 6),
                 0x5E: Instruction('LSR', doLsr, 'ABSX', 3, 7),
                 0xEA: Instruction('NOP', doNop, '', 1, 2),
-                0x44: Instruction('NOP', doNop, '', 2, 2),
-                0x04: Instruction('NOP', doNop, '', 2, 2),
-                0x14: Instruction('NOP', doNop, '', 2, 2),
-                0x34: Instruction('NOP', doNop, '', 2, 2),
-                0x54: Instruction('NOP', doNop, '', 2, 2),
-                0x74: Instruction('NOP', doNop, '', 2, 2),
-                0xd4: Instruction('NOP', doNop, '', 2, 2),
-                0xf4: Instruction('NOP', doNop, '', 2, 2),
-                0x64: Instruction('NOP', doNop, '', 2, 2),
+                0x44: Instruction('NOP', doNop, '', 2, 3),
+                0x04: Instruction('NOP', doNop, '', 2, 3),
+                0x14: Instruction('NOP', doNop, '', 2, 4),
+                0x34: Instruction('NOP', doNop, '', 2, 4),
+                0x54: Instruction('NOP', doNop, '', 2, 4),
+                0x74: Instruction('NOP', doNop, '', 2, 4),
+                0xd4: Instruction('NOP', doNop, '', 2, 4),
+                0xf4: Instruction('NOP', doNop, '', 2, 4),
+                0x64: Instruction('NOP', doNop, '', 2, 3),
                 0xDA: Instruction('NOP', doNop, '', 1, 2),
                 0x1A: Instruction('NOP', doNop, '', 1, 2),
                 0x3A: Instruction('NOP', doNop, '', 1, 2),
                 0x5A: Instruction('NOP', doNop, '', 1, 2),
                 0x7A: Instruction('NOP', doNop, '', 1, 2),
-                0x0C: Instruction('NOP', doNop, '', 3, 2),
-                0x1C: Instruction('NOP', doNop, '', 3, 2),
-                0x3C: Instruction('NOP', doNop, '', 3, 2),
-                0x5C: Instruction('NOP', doNop, '', 3, 2),
-                0x7C: Instruction('NOP', doNop, '', 3, 2),
-                0xDC: Instruction('NOP', doNop, '', 3, 2),
-                0xFC: Instruction('NOP', doNop, '', 3, 2),
+                0x0C: Instruction('NOP', doNop, '', 3, 4),
+                0x1C: Instruction('NOP', doNop, 'ABSX', 3, 4),
+                0x3C: Instruction('NOP', doNop, 'ABSX', 3, 4),
+                0x5C: Instruction('NOP', doNop, 'ABSX', 3, 4),
+                0x7C: Instruction('NOP', doNop, 'ABSX', 3, 4),
+                0xDC: Instruction('NOP', doNop, 'ABSX', 3, 4),
+                0xFC: Instruction('NOP', doNop, 'ABSX', 3, 4),
                 0xFA: Instruction('NOP', doNop, '', 1, 2),
                 0x80: Instruction('NOP', doNop, '', 2, 2),
                 0x89: Instruction('NOP', doNop, '', 2, 2),
@@ -909,7 +910,7 @@ instructions = {0x69: Instruction('ADC', doAdc, 'IMM', 2, 2),
                 0x9A: Instruction('TXS', doTxs, '', 1, 2),
                 0x98: Instruction('TYA', doTya, '', 1, 2),
                 0xAF: Instruction('LAX', doLax, 'ABS', 3, 4),
-                0xBF: Instruction('LAX', doLax, 'ABSY', 3, 5),
+                0xBF: Instruction('LAX', doLax, 'ABSY', 3, 4),
                 0xA7: Instruction('LAX', doLax, 'ZERO', 2, 3),
                 0xB7: Instruction('LAX', doLax, 'ZEROY', 2, 4),
                 0xA3: Instruction('LAX', doLax, 'INDX', 2, 6),
