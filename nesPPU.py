@@ -49,8 +49,7 @@ class PPU():
         # shared memory registers, comprising 0x2000 - 0x2007
         # and mirrored to 0x4000 on the main cpu memory
         self.registers = [0x00] * 8
-        self.flipflop0 = 0
-        self.flipflop1 = 0
+        self.flipflop0 = 0  # write toggle shared by $2005 and $2006; reading $2002 resets it
 
         self.ctrl1          = 0
         self.ctrl2          = 1
@@ -71,8 +70,11 @@ class PPU():
         return self.cpu.get_register('PC')
 
     def get_register(self, addr):
-        #print "Get Register " + hex(addr) + ": " + hex(self.registers[addr])
-        return self.registers[addr] 
+        value = self.registers[addr]
+        if addr == self.status:
+            self.flipflop0 = 0    # reading $2002 resets the $2005/$2006 toggle
+            self.clear_vblank()   # and clears the vblank flag, as on hardware
+        return value
 
     def set_register(self, addr, value):
         #if addr == self.sprAddr:
@@ -88,20 +90,19 @@ class PPU():
                 self.scroll_y = value
             self.flipflop0 ^= 1
         if addr == self.vramLatch:
-            if self.flipflop1 == 0:
-                #print hex(self.get_pc()) + ": latch_lo = " + hex(value)
+            if self.flipflop0 == 0:          # first write: high byte
+                self.latch_hi = value & 0x3F # PPU addresses are 14 bits
+            else:                            # second write: low byte
                 self.latch_lo = value
-            else:
-                #print hex(self.get_pc()) + ": latch_hi = " + hex(value)
-                self.latch_hi = value
-            self.flipflop1 ^= 1
+            self.flipflop0 ^= 1
         if addr == self.vramData:
-            storAddr = self.latch_lo + (self.latch_hi << 8)
+            storAddr = ((self.latch_hi << 8) | self.latch_lo) & 0x3FFF
             self.set_memory(storAddr, value)
             if self.get_vwrite() == 1:
                 storAddr += 32
             else:
                 storAddr += 1
+            storAddr &= 0x3FFF
             self.latch_lo = storAddr & 0xFF
             self.latch_hi = (storAddr >> 8) & 0xFF
 
@@ -303,11 +304,11 @@ class PPU():
 
                 cIndex = tableIndex + (p*16) + sy
                 c = (self.read_memory(cIndex) >> (7 - sx)) & 1
-                c |= (self.read_memory(cIndex+8) >> (7 - sx)) << 1 & 1
+                c |= ((self.read_memory(cIndex+8) >> (7 - sx)) & 1) << 1
 
                 name_x = x//32
                 name_y = y//32
-                addr = ((name_x % 8) + ((name_7 % 8) * 8)) + 0x3c0
+                addr = ((name_x % 8) + ((name_y % 8) * 8)) + 0x3c0
                 addr += nameTable * 0x400
 
                 p = self.read_memory(self.nameTable0 + addr)
