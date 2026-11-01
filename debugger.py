@@ -220,6 +220,14 @@ class NesDebugger(object):
         """Add a memory breakpoint (read)"""
         self.breakonread.append(self.get_arg(cmd_list[1]))
 
+    def set_break_on_nmi(self, cmd_list):
+        """Turn break-on-NMI on or off; with no argument, toggle it."""
+        if len(cmd_list) > 1 and cmd_list[1].lower() in ['on', 'off']:
+            self.cpu.break_on_nmi = cmd_list[1].lower() == 'on'
+        else:
+            self.cpu.break_on_nmi = not self.cpu.break_on_nmi
+        print("Break on NMI: " + ("on" if self.cpu.break_on_nmi else "off"))
+
     def test_log(self, cmd_list):
         """Test execution against an execution log from another emu"""
         with open("tests/" + cmd_list[1] + ".log", "r") as log:
@@ -320,6 +328,7 @@ class NesDebugger(object):
         print("reset   \t\t - reset the cpu")
         print("bwrite / bw\t\t - break on write")
         print("bread / br\t\t - break on read")
+        print("bnmi [on|off]\t\t - break when an NMI is taken (no arg toggles)")
         print("screen\t\t\t - print screen to console")
         print("reg / r\t\t\t - set register value")
         print("test    \t\t\t - test execution against a log")
@@ -397,6 +406,9 @@ class NesDebugger(object):
 
         if cmd == 'bw' or cmd == 'bwrite':
             self.add_break_on_write(cmd_list)
+
+        if cmd == 'bnmi':
+            self.set_break_on_nmi(cmd_list)
 
         if cmd == 'l' or cmd == 'last':
             self.show_last_four()
