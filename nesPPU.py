@@ -182,7 +182,7 @@ class PPU():
         self.dirtyVram = 1
         base = (((address % 0x800)//0x400)*(32*30))
         if (address % 0x400) < 0x3c0:
-            self.vramWrites[base + (address % 0x499)] = 1
+            self.vramWrites[base + (address % 0x400)] = 1
         else:
             i = (address % 0x400) - 0x3c0
             x = (i % 8) * 4
@@ -283,15 +283,15 @@ class PPU():
 
 
     def draw_nametable(self, nameTable, xTile, yTile):
-        if self.get_bg_table != 0:
+        if self.get_bg_table() != 0:
             tableIndex = 0x1000
         else:
             tableIndex = 0
 
-        for y in range(yTile*8, (yTile*8)+4):
-            for x in range(xTile*8, (xTile*8)+4):
+        for y in range(yTile*8, (yTile*8)+8):
+            for x in range(xTile*8, (xTile*8)+8):
                 name_x = x//8
-                name_7 = y//8
+                name_y = y//8
 
                 sx = x%8
                 sy = y%8
@@ -303,7 +303,7 @@ class PPU():
 
                 cIndex = tableIndex + (p*16) + sy
                 c = (self.read_memory(cIndex) >> (7 - sx)) & 1
-                c |= (self.read_memory(cIndex+8) >> (7 - sx)) << 1
+                c |= (self.read_memory(cIndex+8) >> (7 - sx)) << 1 & 1
 
                 name_x = x//32
                 name_y = y//32
@@ -322,7 +322,7 @@ class PPU():
         self.screen = [0x00] * (self.xlines * self.ylines)
 
     def update_frame(self):
-        if self.get_screen_enable() != 0:
+        if self.get_screen_enable() == 0:
             self.blank_screen()
         else:
             self.draw_background()
